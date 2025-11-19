@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Textarea } from './ui/textarea';
 import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface DataUploadProps {
   onComplete: () => void;
