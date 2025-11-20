@@ -22,8 +22,41 @@ type StudentAttribute = '全体' | '学生' | '会員企業' | '招待枠' | '�
 // モックデータ
 const sessions = ['第1回', '第2回', '第3回', '第4回', '第5回', '第6回'];
 
+// 型定義
+interface NPSMetrics {
+  score: number;
+  promoters: number;
+  neutrals: number;
+  detractors: number;
+}
+
+interface RadarItem {
+  category: string;
+  score: number;
+  fullMark: number;
+}
+
+interface RatingCount {
+  rating: string;
+  count: number;
+}
+
+interface DistributionGroups {
+  overall: RatingCount[];
+  学習量: RatingCount[];
+  理解度: RatingCount[];
+  運営: RatingCount[];
+  講師満足度: RatingCount[];
+  時間使い方: RatingCount[];
+  質問対応: RatingCount[];
+  話し方: RatingCount[];
+  予習: RatingCount[];
+  意欲: RatingCount[];
+  今後活用: RatingCount[];
+}
+
 // 各回のNPSデータ（速報版と確定版）
-const npsData: { [key: string]: { [type in AnalysisType]: any } } = {
+const npsData: Record<string, Record<AnalysisType, NPSMetrics>> = {
   '第1回': {
     '速報版': { score: 12.5, promoters: 22, neutrals: 20, detractors: 8 },
     '確定版': { score: 15.5, promoters: 25, neutrals: 18, detractors: 7 },
@@ -39,7 +72,7 @@ const npsData: { [key: string]: { [type in AnalysisType]: any } } = {
 };
 
 // レーダーチャートデータ（速報版と確定版）
-const radarData: { [key: string]: { [type in AnalysisType]: any[] } } = {
+const radarData: Record<string, Record<AnalysisType, RadarItem[]>> = {
   '第1回': {
     '速報版': [
       { category: '総合満足度', score: 4.0, fullMark: 5 },
@@ -127,7 +160,7 @@ const radarData: { [key: string]: { [type in AnalysisType]: any[] } } = {
 };
 
 // 評価分布データ（速報版と確定版）
-const distributionData: { [key: string]: { [type in AnalysisType]: any } } = {
+const distributionData: Record<string, Record<AnalysisType, DistributionGroups>> = {
   '第1回': {
     '速報版': {
       overall: [
@@ -661,7 +694,7 @@ interface SessionAnalysisProps {
 }
 
 // 属性別のデータ調整関数
-function adjustNPSForAttribute(baseNPS: any, attribute: StudentAttribute): any {
+function adjustNPSForAttribute(baseNPS: NPSMetrics, attribute: StudentAttribute): NPSMetrics {
   const adjustments: { [key: string]: number } = {
     '全体': 0,
     '学生': -3,
@@ -779,47 +812,52 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
 
   const npsColor = currentNPS.score >= 0 ? 'text-green-600' : 'text-red-600';
   const npsBgColor = currentNPS.score >= 0 ? 'bg-green-50' : 'bg-red-50';
-  const analysisTypeBgColor = analysisType === '速報版' ? 'bg-blue-50' : 'bg-green-50';
-  const analysisTypeBorderColor = analysisType === '速報版' ? 'border-blue-200' : 'border-green-200';
 
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive':
-        return <ThumbsUp className="h-4 w-4 text-green-600" />;
-      case 'negative':
-        return <ThumbsDown className="h-4 w-4 text-red-600" />;
-      default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+    case 'positive':
+      return <ThumbsUp className="h-4 w-4 text-green-600" />;
+    case 'negative':
+      return <ThumbsDown className="h-4 w-4 text-red-600" />;
+    default:
+      return <Minus className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const getSentimentBadge = (sentiment: string) => {
-    const variants: { [key: string]: any } = {
+  type Sentiment = 'positive' | 'negative' | 'neutral';
+  type Importance = 'high' | 'medium' | 'low';
+  interface BadgeConfig {
+    variant: 'default' | 'secondary' | 'outline';
+    className?: string;
+  }
+
+  const getSentimentBadge = (sentiment: Sentiment) => {
+    const variants: Record<Sentiment, BadgeConfig> = {
       positive: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
       negative: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
       neutral: { variant: 'secondary', className: '' },
     };
-    const labels: { [key: string]: string } = {
+    const labels: Record<Sentiment, string> = {
       positive: 'ポジティブ',
       negative: 'ネガティブ',
       neutral: 'ニュートラル',
     };
-    const config = variants[sentiment] || variants.neutral;
+    const config = variants[sentiment];
     return <Badge {...config}>{labels[sentiment]}</Badge>;
   };
 
-  const getImportanceBadge = (importance: string) => {
-    const variants: { [key: string]: any } = {
+  const getImportanceBadge = (importance: Importance) => {
+    const variants: Record<Importance, BadgeConfig> = {
       high: { variant: 'default', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' },
       medium: { variant: 'secondary', className: '' },
       low: { variant: 'outline', className: '' },
     };
-    const labels: { [key: string]: string } = {
+    const labels: Record<Importance, string> = {
       high: '重要',
       medium: '中',
       low: '低',
     };
-    const config = variants[importance] || variants.medium;
+    const config = variants[importance];
     return <Badge {...config}>{labels[importance]}</Badge>;
   };
 

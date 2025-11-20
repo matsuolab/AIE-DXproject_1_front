@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -48,14 +48,38 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const [lectureContent, setLectureContent] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'complete'>('idle');
-  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  // 重複検出は派生状態なので useMemo で算出し、不要な再レンダーを防ぐ
+  // 既存講座選択時に派生させる講座情報（stateに二重保持しない）
+  const selectedCourse = useMemo(() => {
+    if (!isNewCourse && selectedCourseName && selectedYear && selectedPeriod) {
+      return existingCourses.find(
+        c => c.name === selectedCourseName && c.year === selectedYear && c.period === selectedPeriod
+      );
+    }
+    return undefined;
+  }, [isNewCourse, selectedCourseName, selectedYear, selectedPeriod, existingCourses]);
+
+  const effectiveCourseName = isNewCourse ? courseName : (selectedCourse?.name || '');
+  const effectiveYear = isNewCourse ? year : (selectedCourse?.year || '');
+  const effectivePeriod = isNewCourse ? period : (selectedCourse?.period || '');
+  const effectiveSessionCount = isNewCourse ? sessionCount : (selectedCourse?.sessionCount.toString() || '');
+
+  const duplicateDetected = useMemo(() => {
+    if (!effectiveCourseName || !effectiveYear || !effectivePeriod || !sessionNumber || !analysisType) return false;
+    const course = existingCourses.find(
+      c => c.name === effectiveCourseName && c.year === effectiveYear && c.period === effectivePeriod
+    );
+    if (course && course.sessions) {
+      const session = course.sessions.find(s => s.sessionNumber === parseInt(sessionNumber));
+      return !!(session && session.analysisTypes.includes(analysisType));
+    }
+    return false;
+  }, [effectiveCourseName, effectiveYear, effectivePeriod, sessionNumber, analysisType, existingCourses]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const years = ['2025年度', '2024年度', '2023年度', '2022年度', '2021年度'];
 
-  useEffect(() => {
-    checkForDuplicates();
-  }, [courseName, year, period, sessionNumber, analysisType]);
+  // 重複チェックは useMemo で算出し、副作用での setState を避ける
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -121,41 +145,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
     ? Array.from(new Set(existingCourses.filter(c => c.name === selectedCourseName && c.year === selectedYear).map(c => c.period)))
     : [];
 
-  // 全て選択されたら講座を特定
-  useEffect(() => {
-    if (!isNewCourse && selectedCourseName && selectedYear && selectedPeriod) {
-      const course = existingCourses.find(
-        c => c.name === selectedCourseName && c.year === selectedYear && c.period === selectedPeriod
-      );
-      if (course) {
-        setCourseName(course.name);
-        setYear(course.year);
-        setPeriod(course.period);
-        setSessionCount(course.sessionCount.toString());
-      }
-    }
-  }, [selectedCourseName, selectedYear, selectedPeriod, isNewCourse, existingCourses]);
-
-  const checkForDuplicates = () => {
-    if (!courseName || !year || !period || !sessionNumber || !analysisType) {
-      setShowDuplicateWarning(false);
-      return;
-    }
-
-    const course = existingCourses.find(
-      c => c.name === courseName && 
-      c.year === year && 
-      c.period === period
-    );
-
-    if (course && course.sessions) {
-      const session = course.sessions.find(s => s.sessionNumber === parseInt(sessionNumber));
-      const duplicate = session && session.analysisTypes.includes(analysisType);
-      setShowDuplicateWarning(!!duplicate);
-    } else {
-      setShowDuplicateWarning(false);
-    }
-  };
+  // 既存講座選択時は派生値を使用するため effect での setState は不要
 
   const handleStartAnalysis = async () => {
     // バリデーション
@@ -167,11 +157,11 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
       toast.error('既存の講座を選択してください');
       return;
     }
-    if (!courseName.trim()) {
+    if (!effectiveCourseName.trim()) {
       toast.error('講座名を入力してください');
       return;
     }
-    if (!year) {
+    if (!effectiveYear) {
       toast.error('年度を選択してください');
       return;
     }
@@ -199,8 +189,8 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
       toast.error('講義回数を入力してください');
       return;
     }
-    if (!isNewCourse && parseInt(sessionNumber) > parseInt(sessionCount)) {
-      toast.error(`講義回は${sessionCount}以下である必要があります`);
+    if (!isNewCourse && effectiveSessionCount && parseInt(sessionNumber) > parseInt(effectiveSessionCount)) {
+      toast.error(`講義回は${effectiveSessionCount}以下である必要があります`);
       return;
     }
 
@@ -221,7 +211,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
 
       setUploadStatus('complete');
       toast.success('分析が完了しました！', {
-        description: `講座「${courseName}」の${analysisType}データが登録されました。`,
+        description: `講座「${effectiveCourseName}」の${analysisType}データが登録されました。`,
       });
 
       // 完了後、少し待ってから講座一覧に戻る
@@ -229,7 +219,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
         onComplete();
       }, 1500);
 
-    } catch (error) {
+    } catch {
       toast.error('エラーが発生しました', {
         description: 'データのアップロードに失敗しました。もう一度お試しください。',
       });
@@ -279,9 +269,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                   border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
                   transition-colors
                   ${isDragging 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                  }
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+              }
                 `}
               >
                 <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -504,7 +494,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
               </div>
 
               {/* 重複警告 */}
-              {showDuplicateWarning && (
+              {duplicateDetected && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>データの重複が検出されました</AlertTitle>
@@ -513,7 +503,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                       同じ「講座名」「年度」「期間」「講義回」「分析タイプ」の組み合わせが既に存在します。
                     </p>
                     <p className="mb-2">
-                      <strong>「{courseName}」「{year}」「{period}」「第{sessionNumber}回」「{analysisType}」</strong>
+                      <strong>「{effectiveCourseName}」「{effectiveYear}」「{effectivePeriod}」「第{sessionNumber}回」「{analysisType}」</strong>
                     </p>
                     <p className="mb-2">
                       新しいデータはアップロードされません。上書きしたい場合は、先にデータ削除画面から該当する講義回のデータを削除してから、もう一度アップロードしてください。
@@ -665,8 +655,8 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
             disabled={
               isUploading || 
               !file || 
-              !courseName || 
-              !year || 
+              !effectiveCourseName || 
+              !effectiveYear || 
               (isNewCourse && !period) ||
               !sessionNumber ||
               (isNewCourse && !sessionCount) ||

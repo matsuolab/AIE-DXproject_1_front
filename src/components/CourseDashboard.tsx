@@ -17,12 +17,9 @@ interface CourseDashboardProps {
 export type AnalysisType = '速報版' | '確定版';
 export type StudentAttribute = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
 
-export function CourseDashboard({ courseId, courseName, courseYear, coursePeriod, allCourses }: CourseDashboardProps) {
+export function CourseDashboard({ courseName, courseYear, coursePeriod, allCourses }: CourseDashboardProps) {
   const [analysisType, setAnalysisType] = useState<AnalysisType>('確定版');
   const [studentAttribute, setStudentAttribute] = useState<StudentAttribute>('全体');
-
-  const analysisTypeBgColor = analysisType === '速報版' ? 'bg-blue-50' : 'bg-green-50';
-  const analysisTypeBorderColor = analysisType === '速報版' ? 'border-blue-200' : 'border-green-200';
 
   return (
     <div className="container mx-auto px-4 py-8">

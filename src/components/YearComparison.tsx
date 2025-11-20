@@ -6,6 +6,11 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { TrendingUp, TrendingDown, Info } from 'lucide-react';
 import type { Course } from './CourseList';
 
+// 型定義追加
+interface YearlyNPSPoint { session: string; nps: number }
+interface YearlyCategoryScore { category: string; score: number }
+interface YearlyMetric { averageNPS: number; averageOverall: number; averageInstructor: number; responseRate: number; totalResponses: number }
+
 interface YearComparisonProps {
   currentCourseName: string;
   currentYear: string;
@@ -14,7 +19,7 @@ interface YearComparisonProps {
 }
 
 // モックデータ - 年度別NPS推移
-const yearlyNPSData: { [key: string]: any[] } = {
+const yearlyNPSData: Record<string, YearlyNPSPoint[]> = {
   '2024年度': [
     { session: '第1回', nps: 15.5 },
     { session: '第2回', nps: 22.3 },
@@ -42,7 +47,7 @@ const yearlyNPSData: { [key: string]: any[] } = {
 };
 
 // 年度別カテゴリ平均スコア
-const yearlyCategoryData: { [key: string]: any[] } = {
+const yearlyCategoryData: Record<string, YearlyCategoryScore[]> = {
   '2024年度': [
     { category: '総合満足度', score: 4.35 },
     { category: '学習量', score: 4.28 },
@@ -76,7 +81,7 @@ const yearlyCategoryData: { [key: string]: any[] } = {
 };
 
 // 年度別総合指標
-const yearlyMetrics: { [key: string]: any } = {
+const yearlyMetrics: Record<string, YearlyMetric> = {
   '2024年度': {
     averageNPS: 25.2,
     averageOverall: 4.35,

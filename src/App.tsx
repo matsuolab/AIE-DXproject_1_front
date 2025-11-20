@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
-import { CourseList, Course } from './components/CourseList';
+import { CourseList, type Course } from './components/CourseList';
 import { CourseDashboard } from './components/CourseDashboard';
 import { DataUpload } from './components/DataUpload';
 import { DataDelete } from './components/DataDelete';
