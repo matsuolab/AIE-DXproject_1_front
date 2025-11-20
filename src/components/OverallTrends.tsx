@@ -36,7 +36,17 @@ const npsTrendData = {
 };
 
 // 回答数と離脱率の推移データ（速報版と確定版）
-const responseRetentionData = {
+interface ResponseRetentionEntry {
+  session: string;
+  responses: number;
+  retentionRate: number;
+  student: number;
+  corporate: number;
+  invited: number;
+  unknown: number;
+}
+
+const responseRetentionData: Record<AnalysisType, ResponseRetentionEntry[]> = {
   '速報版': [
     { session: '第1回', responses: 350, retentionRate: 100, student: 140, corporate: 155, invited: 40, unknown: 15 },
     { session: '第2回', responses: 338, retentionRate: 96.6, student: 136, corporate: 150, invited: 38, unknown: 14 },
@@ -52,26 +62,6 @@ const responseRetentionData = {
     { session: '第4回', responses: 405, retentionRate: 90.0, student: 162, corporate: 180, invited: 45, unknown: 18 },
     { session: '第5回', responses: 395, retentionRate: 87.8, student: 158, corporate: 175, invited: 44, unknown: 18 },
     { session: '第6回', responses: 388, retentionRate: 86.2, student: 155, corporate: 172, invited: 43, unknown: 18 },
-  ],
-};
-
-// 各回の平均点推移（カテゴリ別・速報版と確定版）
-const categoryTrendData = {
-  '速報版': [
-    { session: '第1回', overall: 4.0, content: 3.9, instructor: 4.3, selfEval: 3.6 },
-    { session: '第2回', overall: 4.1, content: 4.0, instructor: 4.4, selfEval: 3.8 },
-    { session: '第3回', overall: 3.9, content: 3.8, instructor: 4.2, selfEval: 3.7 },
-    { session: '第4回', overall: 4.2, content: 4.1, instructor: 4.5, selfEval: 3.9 },
-    { session: '第5回', overall: 4.3, content: 4.2, instructor: 4.6, selfEval: 4.0 },
-    { session: '第6回', overall: 4.4, content: 4.3, instructor: 4.5, selfEval: 4.1 },
-  ],
-  '確定版': [
-    { session: '第1回', overall: 4.2, content: 4.1, instructor: 4.5, selfEval: 3.8 },
-    { session: '第2回', overall: 4.3, content: 4.2, instructor: 4.6, selfEval: 4.0 },
-    { session: '第3回', overall: 4.1, content: 4.0, instructor: 4.4, selfEval: 3.9 },
-    { session: '第4回', overall: 4.4, content: 4.3, instructor: 4.7, selfEval: 4.1 },
-    { session: '第5回', overall: 4.5, content: 4.4, instructor: 4.8, selfEval: 4.2 },
-    { session: '第6回', overall: 4.6, content: 4.5, instructor: 4.7, selfEval: 4.3 },
   ],
 };
 
@@ -218,15 +208,16 @@ const attributeFactors = {
 };
 
 // 属性別にデータをフィルタリングする関数
-function getAttributeResponseCount(sessionData: any, attribute: StudentAttribute): number {
+function getAttributeResponseCount(sessionData: ResponseRetentionEntry, attribute: StudentAttribute): number {
   if (attribute === '全体') return sessionData.responses;
-  const attrMap: { [key: string]: string } = {
+  const attrMap: Record<Exclude<StudentAttribute, '全体'>, 'student' | 'corporate' | 'invited' | 'unknown'> = {
     '学生': 'student',
     '会員企業': 'corporate',
     '招待枠': 'invited',
     '不明': 'unknown'
   };
-  return sessionData[attrMap[attribute]] || 0;
+  const key = attrMap[attribute];
+  return sessionData[key] ?? 0;
 }
 
 // 属性別にNPSを調整する関数
@@ -246,7 +237,7 @@ function adjustScoreForAttribute(baseScore: number, attribute: StudentAttribute)
   return Math.max(1, Math.min(5, baseScore + adjustments[attribute]));
 }
 
-export function OverallTrends({ courseName, analysisType, studentAttribute }: OverallTrendsProps) {
+export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsProps) {
   // チェックボックスで選択された項目を管理
   const [selectedItems, setSelectedItems] = useState<string[]>(['総合満足度', '学習量', '理解度', '運営', '講師満足度']);
 
@@ -262,7 +253,6 @@ export function OverallTrends({ courseName, analysisType, studentAttribute }: Ov
   // 分析タイプに応じたデータを選択
   const baseNPSTrend = npsTrendData[analysisType];
   const baseResponseRetention = responseRetentionData[analysisType];
-  const baseCategoryTrend = categoryTrendData[analysisType];
   const baseDetailedTrend = detailedTrendData[analysisType];
   const baseOverallAverages = overallAverages[analysisType];
   const baseSentiment = sentimentData[analysisType];
@@ -285,14 +275,6 @@ export function OverallTrends({ courseName, analysisType, studentAttribute }: Ov
   const currentResponseRetention = attributeResponseData.map(item => ({
     ...item,
     retentionRate: (item.responses / firstSessionAttributeResponses) * 100
-  }));
-
-  const currentCategoryTrend = baseCategoryTrend.map(item => ({
-    session: item.session,
-    overall: adjustScoreForAttribute(item.overall, studentAttribute),
-    content: adjustScoreForAttribute(item.content, studentAttribute),
-    instructor: adjustScoreForAttribute(item.instructor, studentAttribute),
-    selfEval: adjustScoreForAttribute(item.selfEval, studentAttribute)
   }));
 
   const currentOverallAverages = Object.fromEntries(

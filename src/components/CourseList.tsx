@@ -72,73 +72,73 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
       {/* 絞り込みフィルター */}
       {isFilterExpanded && (
         <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>絞り込み検索</CardTitle>
-          <CardDescription>講座名、年度、期間で絞り込むことができます</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm">講座名で検索</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="講座名を入力..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+          <CardHeader>
+            <CardTitle>絞り込み検索</CardTitle>
+            <CardDescription>講座名、年度、期間で絞り込むことができます</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm">講座名で検索</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="講座名を入力..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm">年度</label>
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="年度を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {uniqueYears.map(year => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm">期間</label>
+                <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="期間を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {uniquePeriods.map(period => (
+                      <SelectItem key={period} value={period}>{period}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm">年度</label>
-              <Select value={yearFilter} onValueChange={setYearFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="年度を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  {uniqueYears.map(year => (
-                    <SelectItem key={year} value={year}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm">期間</label>
-              <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="期間を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  {uniquePeriods.map(period => (
-                    <SelectItem key={period} value={period}>{period}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {(searchQuery || yearFilter !== 'all' || periodFilter !== 'all') && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                {filteredCourses.length}件の講座が見つかりました
-              </p>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setSearchQuery('');
-                  setYearFilter('all');
-                  setPeriodFilter('all');
-                }}
-              >
+            {(searchQuery || yearFilter !== 'all' || periodFilter !== 'all') && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  {filteredCourses.length}件の講座が見つかりました
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setYearFilter('all');
+                    setPeriodFilter('all');
+                  }}
+                >
                 フィルターをリセット
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* 講座カード一覧 */}
@@ -151,30 +151,30 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
-          <Card key={course.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>{course.name}</CardTitle>
-              <CardDescription>{course.year}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{course.period}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <BarChart3 className="h-4 w-4" />
-                  <span>{course.sessionCount}回の講義</span>
-                </div>
-                <Button 
-                  className="w-full mt-4" 
-                  onClick={() => onSelectCourse(course.id)}
-                >
+            <Card key={course.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle>{course.name}</CardTitle>
+                <CardDescription>{course.year}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>{course.period}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <BarChart3 className="h-4 w-4" />
+                    <span>{course.sessionCount}回の講義</span>
+                  </div>
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => onSelectCourse(course.id)}
+                  >
                   分析ダッシュボードを見る
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
