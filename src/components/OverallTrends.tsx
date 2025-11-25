@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, User, BookOpen } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
@@ -15,6 +16,17 @@ interface OverallTrendsProps {
   studentAttribute: StudentAttribute;
 }
 
+// 講義回ごとの情報（講義日、講師名、講義内容）
+const sessionInfoData = [
+  { session: '第1回', lectureDate: '2024-10-07', instructorName: '山田 太郎', lectureContent: 'イントロダクション：大規模言語モデルの概要と歴史' },
+  { session: '第2回', lectureDate: '2024-10-14', instructorName: '山田 太郎', lectureContent: 'Transformerアーキテクチャの基礎' },
+  { session: '第3回', lectureDate: '2024-10-21', instructorName: '鈴木 花子', lectureContent: '事前学習とファインチューニング' },
+  { session: '第4回', lectureDate: '2024-10-28', instructorName: '鈴木 花子', lectureContent: 'プロンプトエンジニアリング' },
+  { session: '特別回', lectureDate: '2024-11-04', instructorName: '田中 健一', lectureContent: '特別講演：企業におけるLLM活用事例' },
+  { session: '第5回', lectureDate: '2024-11-11', instructorName: '佐藤 一郎', lectureContent: 'RAGと外部知識の活用' },
+  { session: '第6回', lectureDate: '2024-11-18', instructorName: '山田 太郎', lectureContent: 'LLMの応用事例と今後の展望' },
+];
+
 // モックデータ - NPS推移（速報版と確定版）
 const npsTrendData = {
   '速報版': [
@@ -22,6 +34,7 @@ const npsTrendData = {
     { session: '第2回', nps: 20.0 },
     { session: '第3回', nps: 16.0 },
     { session: '第4回', nps: 25.2 },
+    { session: '特別回', nps: 38.5 },
     { session: '第5回', nps: 28.5 },
     { session: '第6回', nps: 32.1 },
   ],
@@ -30,6 +43,7 @@ const npsTrendData = {
     { session: '第2回', nps: 22.3 },
     { session: '第3回', nps: 18.7 },
     { session: '第4回', nps: 28.4 },
+    { session: '特別回', nps: 42.0 },
     { session: '第5回', nps: 31.2 },
     { session: '第6回', nps: 35.8 },
   ],
@@ -52,6 +66,7 @@ const responseRetentionData: Record<AnalysisType, ResponseRetentionEntry[]> = {
     { session: '第2回', responses: 338, retentionRate: 96.6, student: 136, corporate: 150, invited: 38, unknown: 14 },
     { session: '第3回', responses: 325, retentionRate: 92.9, student: 130, corporate: 145, invited: 36, unknown: 14 },
     { session: '第4回', responses: 315, retentionRate: 90.0, student: 126, corporate: 141, invited: 35, unknown: 13 },
+    { session: '特別回', responses: 280, retentionRate: 80.0, student: 112, corporate: 125, invited: 30, unknown: 13 },
     { session: '第5回', responses: 308, retentionRate: 88.0, student: 123, corporate: 137, invited: 34, unknown: 14 },
     { session: '第6回', responses: 302, retentionRate: 86.3, student: 121, corporate: 134, invited: 33, unknown: 14 },
   ],
@@ -60,6 +75,7 @@ const responseRetentionData: Record<AnalysisType, ResponseRetentionEntry[]> = {
     { session: '第2回', responses: 432, retentionRate: 96.0, student: 175, corporate: 190, invited: 48, unknown: 19 },
     { session: '第3回', responses: 418, retentionRate: 92.9, student: 168, corporate: 185, invited: 47, unknown: 18 },
     { session: '第4回', responses: 405, retentionRate: 90.0, student: 162, corporate: 180, invited: 45, unknown: 18 },
+    { session: '特別回', responses: 365, retentionRate: 81.1, student: 146, corporate: 162, invited: 40, unknown: 17 },
     { session: '第5回', responses: 395, retentionRate: 87.8, student: 158, corporate: 175, invited: 44, unknown: 18 },
     { session: '第6回', responses: 388, retentionRate: 86.2, student: 155, corporate: 172, invited: 43, unknown: 18 },
   ],
@@ -72,6 +88,7 @@ const detailedTrendData = {
     { session: '第2回', 総合満足度: 4.1, 学習量: 4.0, 理解度: 3.9, 運営: 4.2, 講師満足度: 4.4, 時間使い方: 4.3, 質問対応: 4.5, 話し方: 4.4, 予習: 3.7, 意欲: 3.9, 今後活用: 3.8 },
     { session: '第3回', 総合満足度: 3.9, 学習量: 3.8, 理解度: 3.7, 運営: 4.0, 講師満足度: 4.2, 時間使い方: 4.1, 質問対応: 4.3, 話し方: 4.2, 予習: 3.6, 意欲: 3.8, 今後活用: 3.7 },
     { session: '第4回', 総合満足度: 4.2, 学習量: 4.1, 理解度: 4.0, 運営: 4.3, 講師満足度: 4.5, 時間使い方: 4.4, 質問対応: 4.6, 話し方: 4.5, 予習: 3.8, 意欲: 4.0, 今後活用: 3.9 },
+    { session: '特別回', 総合満足度: 4.6, 学習量: 4.4, 理解度: 4.3, 運営: 4.5, 講師満足度: 4.8, 時間使い方: 4.7, 質問対応: 4.8, 話し方: 4.7, 予習: 3.5, 意欲: 4.4, 今後活用: 4.5 },
     { session: '第5回', 総合満足度: 4.3, 学習量: 4.2, 理解度: 4.1, 運営: 4.4, 講師満足度: 4.6, 時間使い方: 4.5, 質問対応: 4.7, 話し方: 4.6, 予習: 3.9, 意欲: 4.1, 今後活用: 4.0 },
     { session: '第6回', 総合満足度: 4.4, 学習量: 4.3, 理解度: 4.2, 運営: 4.5, 講師満足度: 4.5, 時間使い方: 4.4, 質問対応: 4.6, 話し方: 4.5, 予習: 4.0, 意欲: 4.2, 今後活用: 4.1 },
   ],
@@ -80,6 +97,7 @@ const detailedTrendData = {
     { session: '第2回', 総合満足度: 4.3, 学習量: 4.2, 理解度: 4.1, 運営: 4.4, 講師満足度: 4.6, 時間使い方: 4.5, 質問対応: 4.7, 話し方: 4.6, 予習: 3.9, 意欲: 4.1, 今後活用: 4.0 },
     { session: '第3回', 総合満足度: 4.1, 学習量: 4.0, 理解度: 3.9, 運営: 4.2, 講師満足度: 4.4, 時間使い方: 4.3, 質問対応: 4.5, 話し方: 4.4, 予習: 3.8, 意欲: 4.0, 今後活用: 3.9 },
     { session: '第4回', 総合満足度: 4.4, 学習量: 4.3, 理解度: 4.2, 運営: 4.5, 講師満足度: 4.7, 時間使い方: 4.6, 質問対応: 4.8, 話し方: 4.7, 予習: 4.0, 意欲: 4.2, 今後活用: 4.1 },
+    { session: '特別回', 総合満足度: 4.7, 学習量: 4.5, 理解度: 4.4, 運営: 4.6, 講師満足度: 4.9, 時間使い方: 4.8, 質問対応: 4.9, 話し方: 4.8, 予習: 3.6, 意欲: 4.5, 今後活用: 4.6 },
     { session: '第5回', 総合満足度: 4.5, 学習量: 4.4, 理解度: 4.3, 運営: 4.6, 講師満足度: 4.8, 時間使い方: 4.7, 質問対応: 4.9, 話し方: 4.8, 予習: 4.1, 意欲: 4.3, 今後活用: 4.2 },
     { session: '第6回', 総合満足度: 4.6, 学習量: 4.5, 理解度: 4.4, 運営: 4.7, 講師満足度: 4.7, 時間使い方: 4.6, 質問対応: 4.8, 話し方: 4.7, 予習: 4.2, 意欲: 4.4, 今後活用: 4.3 },
   ],
@@ -197,6 +215,28 @@ const categoryData = {
     { category: 'その他', count: 35 },
   ],
 };
+
+// Zoom参加者数の推移データ（速報版）
+const zoomParticipantsData = [
+  { session: '第1回', participants: 320 },
+  { session: '第2回', participants: 305 },
+  { session: '第3回', participants: 298 },
+  { session: '第4回', participants: 285 },
+  { session: '特別回', participants: 350 },
+  { session: '第5回', participants: 275 },
+  { session: '第6回', participants: 268 },
+];
+
+// 録画視聴回数の推移データ（確定版）
+const recordingViewsData = [
+  { session: '第1回', views: 520 },
+  { session: '第2回', views: 485 },
+  { session: '第3回', views: 510 },
+  { session: '第4回', views: 475 },
+  { session: '特別回', views: 580 },
+  { session: '第5回', views: 490 },
+  { session: '第6回', views: 465 },
+];
 
 // 属性別のデータ調整係数（全体を1.0として）
 const attributeFactors = {
@@ -327,6 +367,49 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
 
   return (
     <div className="space-y-6">
+      {/* 講義回情報一覧 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            講義回情報一覧
+          </CardTitle>
+          <CardDescription>各講義回の講義日、講師名、講義内容</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">講義回</TableHead>
+                <TableHead className="w-[120px]">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    講義日
+                  </div>
+                </TableHead>
+                <TableHead className="w-[120px]">
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    講師名
+                  </div>
+                </TableHead>
+                <TableHead>講義内容</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessionInfoData.map((info) => (
+                <TableRow key={info.session}>
+                  <TableCell className="font-medium">{info.session}</TableCell>
+                  <TableCell>{info.lectureDate}</TableCell>
+                  <TableCell>{info.instructorName}</TableCell>
+                  <TableCell>{info.lectureContent}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* 回答数と継続率の推移 */}
       <Card>
         <CardHeader>
@@ -340,7 +423,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
               <XAxis dataKey="session" />
               <YAxis yAxisId="left" domain={[0, firstSessionResponses]} />
               <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
-              <Tooltip 
+              <Tooltip
                 formatter={(value, name) => {
                   if (name === '継続率') {
                     return `${value}%`;
@@ -349,19 +432,19 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
                 }}
               />
               <Legend />
-              <Line 
+              <Line
                 yAxisId="left"
-                type="monotone" 
-                dataKey="responses" 
-                stroke="#3b82f6" 
+                type="monotone"
+                dataKey="responses"
+                stroke="#3b82f6"
                 name="回答数"
                 strokeWidth={2}
               />
-              <Line 
+              <Line
                 yAxisId="right"
-                type="monotone" 
-                dataKey="retentionRate" 
-                stroke="#22c55e" 
+                type="monotone"
+                dataKey="retentionRate"
+                stroke="#22c55e"
                 name="継続率"
                 strokeWidth={2}
               />
@@ -369,6 +452,40 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Zoom参加者数の推移（速報版）/ 録画視聴回数の推移（確定版） - 全体の時のみ表示 */}
+      {studentAttribute === '全体' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {analysisType === '速報版' ? 'Zoom参加者数の推移' : '録画視聴回数の推移'}
+            </CardTitle>
+            <CardDescription>
+              {analysisType === '速報版'
+                ? '各講義回のZoom参加者数'
+                : '各講義回の録画視聴回数'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={analysisType === '速報版' ? zoomParticipantsData : recordingViewsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="session" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey={analysisType === '速報版' ? 'participants' : 'views'}
+                  stroke={analysisType === '速報版' ? '#3b82f6' : '#22c55e'}
+                  name={analysisType === '速報版' ? 'Zoom参加者数' : '録画視聴回数'}
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* NPS（推奨度）サマリー */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

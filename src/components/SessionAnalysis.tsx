@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { AlertCircle, ThumbsUp, ThumbsDown, Minus, TrendingUp, TrendingDown } from 'lucide-react';
+import { AlertCircle, ThumbsUp, ThumbsDown, Minus, TrendingUp, TrendingDown, Calendar, User, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
@@ -20,7 +20,18 @@ type AnalysisType = '速報版' | '確定版';
 type StudentAttribute = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
 
 // モックデータ
-const sessions = ['第1回', '第2回', '第3回', '第4回', '第5回', '第6回'];
+const sessions = ['第1回', '第2回', '第3回', '第4回', '特別回', '第5回', '第6回'];
+
+// 講義情報データ
+const sessionInfoData: Record<string, { lectureDate: string; instructorName: string; lectureContent: string }> = {
+  '第1回': { lectureDate: '2024-10-07', instructorName: '山田 太郎', lectureContent: 'イントロダクション：大規模言語モデルの概要と歴史' },
+  '第2回': { lectureDate: '2024-10-14', instructorName: '山田 太郎', lectureContent: 'Transformerアーキテクチャの基礎' },
+  '第3回': { lectureDate: '2024-10-21', instructorName: '鈴木 花子', lectureContent: '事前学習とファインチューニング' },
+  '第4回': { lectureDate: '2024-10-28', instructorName: '鈴木 花子', lectureContent: 'プロンプトエンジニアリング' },
+  '特別回': { lectureDate: '2024-11-04', instructorName: '田中 健一', lectureContent: '特別講演：企業におけるLLM活用事例' },
+  '第5回': { lectureDate: '2024-11-11', instructorName: '佐藤 一郎', lectureContent: 'RAGと外部知識の活用' },
+  '第6回': { lectureDate: '2024-11-18', instructorName: '山田 太郎', lectureContent: 'LLMの応用事例と今後の展望' },
+};
 
 // 型定義
 interface NPSMetrics {
@@ -68,6 +79,10 @@ const npsData: Record<string, Record<AnalysisType, NPSMetrics>> = {
   '第3回': {
     '速報版': { score: 16.0, promoters: 26, neutrals: 17, detractors: 7 },
     '確定版': { score: 18.7, promoters: 28, neutrals: 16, detractors: 6 },
+  },
+  '特別回': {
+    '速報版': { score: 28.5, promoters: 35, neutrals: 12, detractors: 3 },
+    '確定版': { score: 32.0, promoters: 38, neutrals: 10, detractors: 2 },
   },
 };
 
@@ -155,6 +170,34 @@ const radarData: Record<string, Record<AnalysisType, RadarItem[]>> = {
       { category: '予習', score: 3.8, fullMark: 5 },
       { category: '意欲', score: 4.0, fullMark: 5 },
       { category: '今後活用', score: 3.9, fullMark: 5 },
+    ],
+  },
+  '特別回': {
+    '速報版': [
+      { category: '総合満足度', score: 4.5, fullMark: 5 },
+      { category: '学習量', score: 4.3, fullMark: 5 },
+      { category: '理解度', score: 4.4, fullMark: 5 },
+      { category: '運営', score: 4.5, fullMark: 5 },
+      { category: '講師満足度', score: 4.7, fullMark: 5 },
+      { category: '時間使い方', score: 4.5, fullMark: 5 },
+      { category: '質問対応', score: 4.6, fullMark: 5 },
+      { category: '話し方', score: 4.6, fullMark: 5 },
+      { category: '予習', score: 3.8, fullMark: 5 },
+      { category: '意欲', score: 4.3, fullMark: 5 },
+      { category: '今後活用', score: 4.5, fullMark: 5 },
+    ],
+    '確定版': [
+      { category: '総合満足度', score: 4.7, fullMark: 5 },
+      { category: '学習量', score: 4.5, fullMark: 5 },
+      { category: '理解度', score: 4.6, fullMark: 5 },
+      { category: '運営', score: 4.7, fullMark: 5 },
+      { category: '講師満足度', score: 4.9, fullMark: 5 },
+      { category: '時間使い方', score: 4.7, fullMark: 5 },
+      { category: '質問対応', score: 4.8, fullMark: 5 },
+      { category: '話し方', score: 4.8, fullMark: 5 },
+      { category: '予習', score: 4.0, fullMark: 5 },
+      { category: '意欲', score: 4.5, fullMark: 5 },
+      { category: '今後活用', score: 4.7, fullMark: 5 },
     ],
   },
 };
@@ -641,6 +684,166 @@ const distributionData: Record<string, Record<AnalysisType, DistributionGroups>>
       ],
     },
   },
+  '特別回': {
+    '速報版': {
+      overall: [
+        { rating: '5点', count: 28 },
+        { rating: '4点', count: 18 },
+        { rating: '3点', count: 4 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      学習量: [
+        { rating: '5点', count: 26 },
+        { rating: '4点', count: 19 },
+        { rating: '3点', count: 5 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      理解度: [
+        { rating: '5点', count: 27 },
+        { rating: '4点', count: 18 },
+        { rating: '3点', count: 5 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      運営: [
+        { rating: '5点', count: 28 },
+        { rating: '4点', count: 19 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      講師満足度: [
+        { rating: '5点', count: 32 },
+        { rating: '4点', count: 15 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      時間使い方: [
+        { rating: '5点', count: 28 },
+        { rating: '4点', count: 18 },
+        { rating: '3点', count: 4 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      質問対応: [
+        { rating: '5点', count: 30 },
+        { rating: '4点', count: 17 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      話し方: [
+        { rating: '5点', count: 30 },
+        { rating: '4点', count: 17 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      予習: [
+        { rating: '5点', count: 14 },
+        { rating: '4点', count: 22 },
+        { rating: '3点', count: 10 },
+        { rating: '2点', count: 4 },
+        { rating: '1点', count: 0 },
+      ],
+      意欲: [
+        { rating: '5点', count: 24 },
+        { rating: '4点', count: 20 },
+        { rating: '3点', count: 6 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      今後活用: [
+        { rating: '5点', count: 28 },
+        { rating: '4点', count: 18 },
+        { rating: '3点', count: 4 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+    },
+    '確定版': {
+      overall: [
+        { rating: '5点', count: 32 },
+        { rating: '4点', count: 16 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      学習量: [
+        { rating: '5点', count: 30 },
+        { rating: '4点', count: 17 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      理解度: [
+        { rating: '5点', count: 31 },
+        { rating: '4点', count: 16 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      運営: [
+        { rating: '5点', count: 32 },
+        { rating: '4点', count: 16 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      講師満足度: [
+        { rating: '5点', count: 36 },
+        { rating: '4点', count: 12 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      時間使い方: [
+        { rating: '5点', count: 32 },
+        { rating: '4点', count: 15 },
+        { rating: '3点', count: 3 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      質問対応: [
+        { rating: '5点', count: 34 },
+        { rating: '4点', count: 14 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      話し方: [
+        { rating: '5点', count: 34 },
+        { rating: '4点', count: 14 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      予習: [
+        { rating: '5点', count: 16 },
+        { rating: '4点', count: 24 },
+        { rating: '3点', count: 8 },
+        { rating: '2点', count: 2 },
+        { rating: '1点', count: 0 },
+      ],
+      意欲: [
+        { rating: '5点', count: 28 },
+        { rating: '4点', count: 18 },
+        { rating: '3点', count: 4 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+      今後活用: [
+        { rating: '5点', count: 32 },
+        { rating: '4点', count: 16 },
+        { rating: '3点', count: 2 },
+        { rating: '2点', count: 0 },
+        { rating: '1点', count: 0 },
+      ],
+    },
+  },
 };
 
 const comments: { [key: string]: { [type in AnalysisType]: Comment[] } } = {
@@ -684,6 +887,22 @@ const comments: { [key: string]: { [type in AnalysisType]: Comment[] } } = {
       { id: '13', text: '演習時間がもう少し欲しかったです。', sentiment: 'negative', category: '運営', importance: 'medium' },
       { id: '14', text: '前回よりも理解しやすい内容でした。', sentiment: 'positive', category: '講義内容', importance: 'medium' },
       { id: '15', text: 'コードサンプルが充実していて良かった。', sentiment: 'positive', category: '講義資料', importance: 'medium' },
+    ],
+  },
+  '特別回': {
+    '速報版': [
+      { id: '16', text: '実際のビジネス現場でのLLM活用事例が非常に参考になりました。', sentiment: 'positive', category: '講義内容', importance: 'high' },
+      { id: '17', text: '企業の方から直接お話を聞けて貴重な経験でした。', sentiment: 'positive', category: '講義内容', importance: 'high' },
+      { id: '18', text: '質疑応答の時間がもう少し欲しかったです。', sentiment: 'negative', category: '運営', importance: 'medium' },
+      { id: '19', text: '具体的な導入事例と成果の数字が印象的でした。', sentiment: 'positive', category: '講義内容', importance: 'medium' },
+    ],
+    '確定版': [
+      { id: '16', text: '実際のビジネス現場でのLLM活用事例が非常に参考になりました。', sentiment: 'positive', category: '講義内容', importance: 'high' },
+      { id: '17', text: '企業の方から直接お話を聞けて貴重な経験でした。', sentiment: 'positive', category: '講義内容', importance: 'high' },
+      { id: '18', text: '質疑応答の時間がもう少し欲しかったです。', sentiment: 'negative', category: '運営', importance: 'medium' },
+      { id: '19', text: '具体的な導入事例と成果の数字が印象的でした。', sentiment: 'positive', category: '講義内容', importance: 'medium' },
+      { id: '20', text: '今後のキャリアを考える上で参考になりました。', sentiment: 'positive', category: 'その他', importance: 'medium' },
+      { id: '21', text: '資料も分かりやすく、復習しやすい内容でした。', sentiment: 'positive', category: '講義資料', importance: 'low' },
     ],
   },
 };
@@ -870,20 +1089,49 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           <CardDescription>分析したい講義回を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex-1 max-w-xs">
-            <label className="text-sm mb-2 block">講義回</label>
-            <Select value={selectedSession} onValueChange={setSelectedSession}>
-              <SelectTrigger>
-                <SelectValue placeholder="講義回を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {sessions.map((session) => (
-                  <SelectItem key={session} value={session}>
-                    {session}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-6">
+            <div className="flex-1 max-w-xs">
+              <label className="text-sm mb-2 block">講義回</label>
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger>
+                  <SelectValue placeholder="講義回を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map((session) => (
+                    <SelectItem key={session} value={session}>
+                      {session}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 講義情報 */}
+            {sessionInfoData[selectedSession] && (
+              <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-xs text-gray-500">講義日</p>
+                    <p className="font-medium">{sessionInfoData[selectedSession].lectureDate}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-xs text-gray-500">講師名</p>
+                    <p className="font-medium">{sessionInfoData[selectedSession].instructorName}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <BookOpen className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500">講義内容</p>
+                    <p className="font-medium">{sessionInfoData[selectedSession].lectureContent}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
