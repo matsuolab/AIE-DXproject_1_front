@@ -5,13 +5,20 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { BarChart3, Calendar, Plus, Trash2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
+export interface SessionData {
+  sessionNumber: number;
+  isSpecialSession: boolean;
+  lectureDate: string;
+  analysisTypes: Array<'速報版' | '確定版'>;
+}
+
 export interface Course {
   id: string;
   name: string;
   year: string;
   period: string;
-  sessionCount: number;
   responseCount: number;
+  sessions?: SessionData[];
 }
 
 interface CourseListProps {
@@ -164,10 +171,13 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <BarChart3 className="h-4 w-4" />
-                    <span>{course.sessionCount}回の講義</span>
+                    <span>
+                      速報版: {course.sessions?.filter(s => s.analysisTypes.includes('速報版')).length || 0}回 /
+                      確定版: {course.sessions?.filter(s => s.analysisTypes.includes('確定版')).length || 0}回
+                    </span>
                   </div>
-                  <Button 
-                    className="w-full mt-4" 
+                  <Button
+                    className="w-full mt-4"
                     onClick={() => onSelectCourse(course.id)}
                   >
                   分析ダッシュボードを見る
