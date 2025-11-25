@@ -670,23 +670,23 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           <CardDescription>全期間の評価項目別平均点（5点満点）</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(currentOverallAverages).map(([key, category]) => (
-              <div key={key}>
-                <h3 className="mb-3">{category.label}</h3>
-                <div className="space-y-3 ml-4">
+              <div key={key} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">{category.label}</h3>
+                <div className="space-y-3">
                   {category.items.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">{item.name}</span>
-                      <div className="flex items-center gap-3">
-                        <Progress 
-                          value={(item.score / 5) * 100} 
-                          className="w-32 h-2"
-                        />
-                        <span className="text-sm min-w-[3rem] text-right">
+                    <div key={index}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-gray-600">{item.name}</span>
+                        <span className="text-sm font-semibold text-gray-900">
                           {item.score.toFixed(2)}
                         </span>
                       </div>
+                      <Progress
+                        value={(item.score / 5) * 100}
+                        className="h-2"
+                      />
                     </div>
                   ))}
                 </div>
