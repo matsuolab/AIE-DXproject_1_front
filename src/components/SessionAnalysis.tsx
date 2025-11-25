@@ -954,7 +954,7 @@ function adjustCountForAttribute(baseCount: number, attribute: StudentAttribute)
 }
 
 export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnalysisProps) {
-  const [selectedSession, setSelectedSession] = useState('第1回');
+  const [selectedSession, setSelectedSession] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -1086,7 +1086,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
       {/* 講義回セレクター */}
       <Card>
         <CardHeader>
-          <CardTitle>{selectedSession}</CardTitle>
+          <CardTitle>{selectedSession || '講義回を選択'}</CardTitle>
           <CardDescription>分析したい講義回を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1108,7 +1108,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
             </div>
 
             {/* 講義情報 */}
-            {sessionInfoData[selectedSession] && (
+            {selectedSession && sessionInfoData[selectedSession] && (
               <div className="bg-blue-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-blue-600" />
@@ -1137,7 +1137,19 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
         </CardContent>
       </Card>
 
+      {/* 講義回が選択されていない場合のメッセージ */}
+      {!selectedSession && (
+        <Card>
+          <CardContent className="py-12">
+            <p className="text-center text-gray-500">
+              講義回を選択すると、詳細な分析結果が表示されます
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 当該回の評価詳細 */}
+      {selectedSession && (
       <Card>
         <CardHeader>
           <CardTitle>NPSと評価内訳</CardTitle>
@@ -1192,8 +1204,10 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           })()}
         </CardContent>
       </Card>
+      )}
 
       {/* 当該回の平均点一覧（レーダーチャート） */}
+      {selectedSession && (
       <Card>
         <CardHeader>
           <CardTitle>全項目の平均点（レーダーチャート）</CardTitle>
@@ -1218,8 +1232,10 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           </ResponsiveContainer>
         </CardContent>
       </Card>
+      )}
 
       {/* 評価分布詳細（主要項目） */}
+      {selectedSession && (
       <Card>
         <CardHeader>
           <CardTitle>評価分布詳細</CardTitle>
@@ -1400,8 +1416,10 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* 重要コメント */}
+      {selectedSession && (
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -1435,8 +1453,10 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* コメント一覧 */}
+      {selectedSession && (
       <Card>
         <CardHeader>
           <CardTitle>コメント一覧</CardTitle>
@@ -1501,6 +1521,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
