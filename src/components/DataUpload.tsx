@@ -18,10 +18,11 @@ interface DataUploadProps {
     name: string;
     year: string;
     period: string;
-    sessionCount: number;
     responseCount: number;
     sessions?: Array<{
       sessionNumber: number;
+      isSpecialSession: boolean;
+      lectureDate: string;
       analysisTypes: Array<'速報版' | '確定版'>;
     }>;
   }>;
@@ -40,14 +41,16 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const [year, setYear] = useState('');
   const [period, setPeriod] = useState('');
   const [sessionNumber, setSessionNumber] = useState('');
-  const [sessionCount, setSessionCount] = useState('');
   const [analysisType, setAnalysisType] = useState<AnalysisType>('速報版');
   const [zoomParticipants, setZoomParticipants] = useState('');
   const [recordingViews, setRecordingViews] = useState('');
   const [instructorName, setInstructorName] = useState('');
   const [lectureContent, setLectureContent] = useState('');
+  const [isSpecialSession, setIsSpecialSession] = useState(false);
+  const [lectureDate, setLectureDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'complete'>('idle');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   // 重複検出は派生状態なので useMemo で算出し、不要な再レンダーを防ぐ
   // 既存講座選択時に派生させる講座情報（stateに二重保持しない）
   const selectedCourse = useMemo(() => {
@@ -62,19 +65,26 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const effectiveCourseName = isNewCourse ? courseName : (selectedCourse?.name || '');
   const effectiveYear = isNewCourse ? year : (selectedCourse?.year || '');
   const effectivePeriod = isNewCourse ? period : (selectedCourse?.period || '');
-  const effectiveSessionCount = isNewCourse ? sessionCount : (selectedCourse?.sessionCount.toString() || '');
 
   const duplicateDetected = useMemo(() => {
-    if (!effectiveCourseName || !effectiveYear || !effectivePeriod || !sessionNumber || !analysisType) return false;
+    if (!effectiveCourseName || !effectiveYear || !effectivePeriod || !analysisType || !lectureDate) return false;
+    // 特別回でない場合は講義回も必要
+    if (!isSpecialSession && !sessionNumber) return false;
+
     const course = existingCourses.find(
       c => c.name === effectiveCourseName && c.year === effectiveYear && c.period === effectivePeriod
     );
     if (course && course.sessions) {
-      const session = course.sessions.find(s => s.sessionNumber === parseInt(sessionNumber));
+      const sessionNum = isSpecialSession ? 0 : parseInt(sessionNumber);
+      const session = course.sessions.find(s =>
+        s.sessionNumber === sessionNum &&
+        s.lectureDate === lectureDate &&
+        s.isSpecialSession === isSpecialSession
+      );
       return !!(session && session.analysisTypes.includes(analysisType));
     }
     return false;
-  }, [effectiveCourseName, effectiveYear, effectivePeriod, sessionNumber, analysisType, existingCourses]);
+  }, [effectiveCourseName, effectiveYear, effectivePeriod, sessionNumber, analysisType, existingCourses, lectureDate, isSpecialSession]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const years = ['2025年度', '2024年度', '2023年度', '2022年度', '2021年度'];
@@ -148,49 +158,57 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   // 既存講座選択時は派生値を使用するため effect での setState は不要
 
   const handleStartAnalysis = async () => {
-    // バリデーション
+    // バリデーション - 未入力項目を収集
+    const errors: Record<string, string> = {};
+
     if (!file) {
-      toast.error('ファイルを選択してください');
-      return;
+      errors.file = 'Excelファイルを選択してください';
     }
-    if (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod)) {
-      toast.error('既存の講座を選択してください');
-      return;
+    if (!isNewCourse && !selectedCourseName) {
+      errors.existingCourseName = '講座名を選択してください';
     }
-    if (!effectiveCourseName.trim()) {
-      toast.error('講座名を入力してください');
-      return;
+    if (!isNewCourse && selectedCourseName && !selectedYear) {
+      errors.existingYear = '年度を選択してください';
     }
-    if (!effectiveYear) {
-      toast.error('年度を選択してください');
-      return;
+    if (!isNewCourse && selectedCourseName && selectedYear && !selectedPeriod) {
+      errors.existingPeriod = '期間を選択してください';
+    }
+    if (isNewCourse && !effectiveCourseName.trim()) {
+      errors.courseName = '講座名を入力してください';
+    }
+    if (isNewCourse && !effectiveYear) {
+      errors.year = '年度を選択してください';
     }
     if (isNewCourse && !period.trim()) {
-      toast.error('期間を入力してください');
-      return;
+      errors.period = '期間を入力してください';
     }
-    if (!sessionNumber || parseInt(sessionNumber) <= 0) {
-      toast.error('講義回を入力してください');
-      return;
+    if (!isSpecialSession && (!sessionNumber || parseInt(sessionNumber) <= 0)) {
+      errors.sessionNumber = '講義回を入力してください';
+    }
+    if (!lectureDate) {
+      errors.lectureDate = '講義日を選択してください';
     }
     if (!instructorName.trim()) {
-      toast.error('講師名を入力してください');
-      return;
+      errors.instructorName = '講師名を入力してください';
     }
     if (analysisType === '速報版' && (!zoomParticipants || parseInt(zoomParticipants) <= 0)) {
-      toast.error('Zoom参加者数を入力してください');
-      return;
+      errors.zoomParticipants = 'Zoom参加者数を入力してください';
     }
     if (analysisType === '確定版' && (!recordingViews || parseInt(recordingViews) <= 0)) {
-      toast.error('録画の視聴回数を入力してください');
-      return;
+      errors.recordingViews = '録画の視聴回数を入力してください';
     }
-    if (isNewCourse && (!sessionCount || parseInt(sessionCount) <= 0)) {
-      toast.error('講義回数を入力してください');
-      return;
-    }
-    if (!isNewCourse && effectiveSessionCount && parseInt(sessionNumber) > parseInt(effectiveSessionCount)) {
-      toast.error(`講義回は${effectiveSessionCount}以下である必要があります`);
+
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast('入力されていない項目があります', {
+        duration: 5000,
+        style: {
+          background: '#ffffff',
+          border: '1px solid #ef4444',
+          color: '#000000',
+        },
+      });
       return;
     }
 
@@ -268,9 +286,11 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                 className={`
                   border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
                   transition-colors
-                  ${isDragging 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  ${validationErrors.file
+                ? 'border-red-500 bg-red-50'
+                : isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
               }
                 `}
               >
@@ -285,6 +305,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                 <p className="text-xs text-gray-400 mt-4">
                   対応形式: Excel (.xlsx, .xls), CSV (.csv)
                 </p>
+                {validationErrors.file && (
+                  <p className="text-sm text-red-600 mt-2 font-medium">{validationErrors.file}</p>
+                )}
               </div>
             ) : (
               <div className="border rounded-lg p-4 bg-gray-50">
@@ -315,7 +338,8 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
           <CardHeader>
             <CardTitle>② 講座情報の入力</CardTitle>
             <CardDescription>
-              新規講座または既存講座のデータを追加します
+              新規講座または既存講座のデータを追加します。
+              既存講座とは、同じ「講座名」「年度」「期間」で登録された講座のことです（例：「大規模言語モデル」「2024年度」「10月〜12月」）。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -324,12 +348,14 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
               <div className="space-y-2">
                 <Label>講座の種類</Label>
                 <Tabs value={isNewCourse ? 'new' : 'existing'} onValueChange={(value) => {
-                  setIsNewCourse(value === 'new');
+                  const isNew = value === 'new';
+                  setIsNewCourse(isNew);
                   setCourseName('');
                   setYear('');
                   setPeriod('');
-                  setSessionCount('');
-                  setSessionNumber('');
+                  setSessionNumber(isNew ? '1' : '');
+                  setIsSpecialSession(false);
+                  setLectureDate('');
                   setSelectedCourseName('');
                   setSelectedYear('');
                   setSelectedPeriod('');
@@ -355,8 +381,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                       setSelectedCourseName(value);
                       setSelectedYear('');
                       setSelectedPeriod('');
+                      setValidationErrors(prev => ({ ...prev, existingCourseName: '' }));
                     }} disabled={isUploading}>
-                      <SelectTrigger id="existingCourseName">
+                      <SelectTrigger id="existingCourseName" className={validationErrors.existingCourseName ? 'border-red-500' : ''}>
                         <SelectValue placeholder="講座名を選択してください" />
                       </SelectTrigger>
                       <SelectContent>
@@ -367,6 +394,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {validationErrors.existingCourseName && (
+                      <p className="text-sm text-red-600 font-medium">{validationErrors.existingCourseName}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -374,8 +404,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     <Select value={selectedYear} onValueChange={(value) => {
                       setSelectedYear(value);
                       setSelectedPeriod('');
+                      setValidationErrors(prev => ({ ...prev, existingYear: '' }));
                     }} disabled={isUploading || !selectedCourseName}>
-                      <SelectTrigger id="existingYear">
+                      <SelectTrigger id="existingYear" className={validationErrors.existingYear ? 'border-red-500' : ''}>
                         <SelectValue placeholder="年度を選択してください" />
                       </SelectTrigger>
                       <SelectContent>
@@ -386,12 +417,18 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {validationErrors.existingYear && (
+                      <p className="text-sm text-red-600 font-medium">{validationErrors.existingYear}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="existingPeriod">期間を選択 *</Label>
-                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod} disabled={isUploading || !selectedYear}>
-                      <SelectTrigger id="existingPeriod">
+                    <Select value={selectedPeriod} onValueChange={(value) => {
+                      setSelectedPeriod(value);
+                      setValidationErrors(prev => ({ ...prev, existingPeriod: '' }));
+                    }} disabled={isUploading || !selectedYear}>
+                      <SelectTrigger id="existingPeriod" className={validationErrors.existingPeriod ? 'border-red-500' : ''}>
                         <SelectValue placeholder="期間を選択してください" />
                       </SelectTrigger>
                       <SelectContent>
@@ -402,6 +439,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {validationErrors.existingPeriod && (
+                      <p className="text-sm text-red-600 font-medium">{validationErrors.existingPeriod}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -414,9 +454,16 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     id="courseName"
                     placeholder="例: 大規模言語モデル"
                     value={courseName}
-                    onChange={(e) => setCourseName(e.target.value)}
+                    onChange={(e) => {
+                      setCourseName(e.target.value);
+                      setValidationErrors(prev => ({ ...prev, courseName: '' }));
+                    }}
                     disabled={isUploading}
+                    className={validationErrors.courseName ? 'border-red-500' : ''}
                   />
+                  {validationErrors.courseName && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.courseName}</p>
+                  )}
                 </div>
               )}
 
@@ -424,8 +471,11 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
               {isNewCourse && (
                 <div className="space-y-2">
                   <Label htmlFor="year">年度 *</Label>
-                  <Select value={year} onValueChange={setYear} disabled={isUploading}>
-                    <SelectTrigger id="year">
+                  <Select value={year} onValueChange={(value) => {
+                    setYear(value);
+                    setValidationErrors(prev => ({ ...prev, year: '' }));
+                  }} disabled={isUploading}>
+                    <SelectTrigger id="year" className={validationErrors.year ? 'border-red-500' : ''}>
                       <SelectValue placeholder="年度を選択" />
                     </SelectTrigger>
                     <SelectContent>
@@ -436,6 +486,9 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {validationErrors.year && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.year}</p>
+                  )}
                 </div>
               )}
 
@@ -447,49 +500,128 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     id="period"
                     placeholder="例: 10月～12月"
                     value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
+                    onChange={(e) => {
+                      setPeriod(e.target.value);
+                      setValidationErrors(prev => ({ ...prev, period: '' }));
+                    }}
                     disabled={isUploading}
+                    className={validationErrors.period ? 'border-red-500' : ''}
                   />
                   <p className="text-sm text-gray-500">
                     講座の実施期間を入力してください（例: 10月～12月、前期（4月-7月））
                   </p>
-                </div>
-              )}
-
-              {/* 新規講座の場合のみ講義回数 */}
-              {isNewCourse && (
-                <div className="space-y-2">
-                  <Label htmlFor="sessionCount">講義回数（全体） *</Label>
-                  <Input
-                    id="sessionCount"
-                    type="number"
-                    placeholder="例: 15"
-                    min="1"
-                    value={sessionCount}
-                    onChange={(e) => setSessionCount(e.target.value)}
-                    disabled={isUploading}
-                  />
-                  <p className="text-sm text-gray-500">
-                    この講座で実施される講義の総回数を入力してください
-                  </p>
+                  {validationErrors.period && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.period}</p>
+                  )}
                 </div>
               )}
 
               {/* 講義回（何回目のデータか） */}
               <div className="space-y-2">
-                <Label htmlFor="sessionNumber">今回アップロードする講義回 *</Label>
-                <Input
-                  id="sessionNumber"
-                  type="number"
-                  placeholder="例: 1"
-                  min="1"
-                  max={sessionCount || undefined}
-                  value={sessionNumber}
-                  onChange={(e) => setSessionNumber(e.target.value)}
+                <Label>今回アップロードする講義回 *</Label>
+                <RadioGroup
+                  value={isSpecialSession ? 'special' : 'normal'}
+                  onValueChange={(value) => setIsSpecialSession(value === 'special')}
                   disabled={isUploading || (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod))}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="normal" id="normalSession" />
+                    <Label htmlFor="normalSession" className="cursor-pointer">
+                      通常回
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="special" id="specialSession" />
+                    <Label htmlFor="specialSession" className="cursor-pointer">
+                      特別回
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* 通常回の場合のみ講義回入力を表示 */}
+              {!isSpecialSession && (
+                <div className="space-y-2">
+                  <Label htmlFor="sessionNumber">第何回の講義か *</Label>
+                  <Input
+                    id="sessionNumber"
+                    type="number"
+                    placeholder="例: 1"
+                    min="1"
+                    value={sessionNumber}
+                    onChange={(e) => {
+                      setSessionNumber(e.target.value);
+                      setValidationErrors(prev => ({ ...prev, sessionNumber: '' }));
+                    }}
+                    disabled={isUploading || (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod))}
+                    className={validationErrors.sessionNumber ? 'border-red-500' : ''}
+                  />
+                  <p className="text-sm text-gray-500">
+                    アップロードするデータが第何回の講義のものかを入力してください
+                  </p>
+                  {validationErrors.sessionNumber && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.sessionNumber}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 講義日 */}
+              <div className="space-y-2">
+                <Label htmlFor="lectureDate">講義日 *</Label>
+                <Input
+                  id="lectureDate"
+                  type="date"
+                  value={lectureDate}
+                  onChange={(e) => {
+                    setLectureDate(e.target.value);
+                    setValidationErrors(prev => ({ ...prev, lectureDate: '' }));
+                  }}
+                  disabled={isUploading || (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod))}
+                  className={validationErrors.lectureDate ? 'border-red-500' : ''}
                 />
                 <p className="text-sm text-gray-500">
-                  アップロードするデータが第何回の講義のものかを入力してください
+                  講義が実施された日付を選択してください
+                </p>
+                {validationErrors.lectureDate && (
+                  <p className="text-sm text-red-600 font-medium">{validationErrors.lectureDate}</p>
+                )}
+              </div>
+
+              {/* 講師名 */}
+              <div className="space-y-2">
+                <Label htmlFor="instructorName">講師名 *</Label>
+                <Input
+                  id="instructorName"
+                  placeholder="例: 山田太郎"
+                  value={instructorName}
+                  onChange={(e) => {
+                    setInstructorName(e.target.value);
+                    setValidationErrors(prev => ({ ...prev, instructorName: '' }));
+                  }}
+                  disabled={isUploading || (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod))}
+                  className={validationErrors.instructorName ? 'border-red-500' : ''}
+                />
+                <p className="text-sm text-gray-500">
+                  今回担当した講師の名前を入力してください
+                </p>
+                {validationErrors.instructorName && (
+                  <p className="text-sm text-red-600 font-medium">{validationErrors.instructorName}</p>
+                )}
+              </div>
+
+              {/* 講義内容 */}
+              <div className="space-y-2">
+                <Label htmlFor="lectureContent">今回の講義内容</Label>
+                <Textarea
+                  id="lectureContent"
+                  placeholder="例: 大規模言語モデルの基礎と応用"
+                  value={lectureContent}
+                  onChange={(e) => setLectureContent(e.target.value)}
+                  disabled={isUploading || (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod))}
+                  rows={3}
+                />
+                <p className="text-sm text-gray-500">
+                  シラバスに記載の講義概要を書いてください
                 </p>
               </div>
 
@@ -500,10 +632,10 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                   <AlertTitle>データの重複が検出されました</AlertTitle>
                   <AlertDescription>
                     <p className="mb-2">
-                      同じ「講座名」「年度」「期間」「講義回」「分析タイプ」の組み合わせが既に存在します。
+                      同じ「講座名」「年度」「期間」「講義回」「講義日」「分析タイプ」の組み合わせが既に存在します。
                     </p>
                     <p className="mb-2">
-                      <strong>「{effectiveCourseName}」「{effectiveYear}」「{effectivePeriod}」「第{sessionNumber}回」「{analysisType}」</strong>
+                      <strong>「{effectiveCourseName}」「{effectiveYear}」「{effectivePeriod}」「{isSpecialSession ? '特別回' : `第${sessionNumber}回`}」「{lectureDate}」「{analysisType}」</strong>
                     </p>
                     <p className="mb-2">
                       新しいデータはアップロードされません。上書きしたい場合は、先にデータ削除画面から該当する講義回のデータを削除してから、もう一度アップロードしてください。
@@ -544,12 +676,19 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     placeholder="例: 150"
                     min="0"
                     value={zoomParticipants}
-                    onChange={(e) => setZoomParticipants(e.target.value)}
+                    onChange={(e) => {
+                      setZoomParticipants(e.target.value);
+                      setValidationErrors(prev => ({ ...prev, zoomParticipants: '' }));
+                    }}
                     disabled={isUploading}
+                    className={validationErrors.zoomParticipants ? 'border-red-500' : ''}
                   />
                   <p className="text-sm text-gray-500">
                     当日のZoomセッションに参加した受講生の数を入力してください
                   </p>
+                  {validationErrors.zoomParticipants && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.zoomParticipants}</p>
+                  )}
                 </div>
               )}
 
@@ -563,51 +702,27 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     placeholder="例: 230"
                     min="0"
                     value={recordingViews}
-                    onChange={(e) => setRecordingViews(e.target.value)}
+                    onChange={(e) => {
+                      setRecordingViews(e.target.value);
+                      setValidationErrors(prev => ({ ...prev, recordingViews: '' }));
+                    }}
                     disabled={isUploading}
+                    className={validationErrors.recordingViews ? 'border-red-500' : ''}
                   />
                   <p className="text-sm text-gray-500">
                     録画の視聴回数（延べ人数）を入力してください
                   </p>
+                  {validationErrors.recordingViews && (
+                    <p className="text-sm text-red-600 font-medium">{validationErrors.recordingViews}</p>
+                  )}
                 </div>
               )}
-
-              {/* 講師名 */}
-              <div className="space-y-2">
-                <Label htmlFor="instructorName">講師名 *</Label>
-                <Input
-                  id="instructorName"
-                  placeholder="例: 山田太郎"
-                  value={instructorName}
-                  onChange={(e) => setInstructorName(e.target.value)}
-                  disabled={isUploading}
-                />
-                <p className="text-sm text-gray-500">
-                  今回担当した講師の名前を入力してください
-                </p>
-              </div>
-
-              {/* 講義内容 */}
-              <div className="space-y-2">
-                <Label htmlFor="lectureContent">今回の講義内容</Label>
-                <Textarea
-                  id="lectureContent"
-                  placeholder="例: 大規模言語モデルの基礎と応用"
-                  value={lectureContent}
-                  onChange={(e) => setLectureContent(e.target.value)}
-                  disabled={isUploading}
-                  rows={3}
-                />
-                <p className="text-sm text-gray-500">
-                  シラバスに記載の講義概要を書いてください
-                </p>
-              </div>
             </div>
 
             <Alert className="mt-6">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>注意:</strong> 同じ「講座名」「年度」「期間」「講義回」「分析タイプ」の組み合わせが既に存在する場合、新しいデータはアップロードされません。上書きしたい場合は、先にデータ削除画面から該当するデータを削除してください。
+                <strong>注意:</strong> 同じ「講座名」「年度」「期間」「講義回」「講義日」「分析タイプ」の組み合わせが既に存在する場合、新しいデータはアップロードされません。上書きしたい場合は、先にデータ削除画面から該当するデータを削除してください。
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -652,19 +767,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
           </Button>
           <Button
             onClick={handleStartAnalysis}
-            disabled={
-              isUploading || 
-              !file || 
-              !effectiveCourseName || 
-              !effectiveYear || 
-              (isNewCourse && !period) ||
-              !sessionNumber ||
-              (isNewCourse && !sessionCount) ||
-              (!isNewCourse && (!selectedCourseName || !selectedYear || !selectedPeriod)) ||
-              (analysisType === '速報版' && !zoomParticipants) ||
-              (analysisType === '確定版' && !recordingViews) || 
-              !instructorName
-            }
+            disabled={isUploading}
             className="min-w-[200px]"
           >
             {isUploading ? (
