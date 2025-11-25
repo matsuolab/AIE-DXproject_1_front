@@ -103,20 +103,43 @@ const detailedTrendData = {
   ],
 };
 
-// 評価項目の設定（表示名とデータキー、色）
-const evaluationItems = [
-  { key: '総合満足度', label: '総合的な満足度', color: '#3b82f6' },
-  { key: '学習量', label: '講義内容の学習量', color: '#8b5cf6' },
-  { key: '理解度', label: '講義内容の理解度', color: '#ec4899' },
-  { key: '運営', label: '講義中の運営アナウンス', color: '#f59e0b' },
-  { key: '講師満足度', label: '講師の総合的な満足度', color: '#10b981' },
-  { key: '時間使い方', label: '講師の授業時間の使い方', color: '#06b6d4' },
-  { key: '質問対応', label: '講師の質問対応', color: '#6366f1' },
-  { key: '話し方', label: '講師の話し方', color: '#f43f5e' },
-  { key: '予習', label: '自身の予習', color: '#84cc16' },
-  { key: '意欲', label: '自身の意欲', color: '#a855f7' },
-  { key: '今後活用', label: '自身の今後への活用', color: '#0ea5e9' },
+// 評価項目の設定（表示名とデータキー、色）- グループ分け
+const evaluationItemGroups = [
+  {
+    groupName: '総合満足度',
+    items: [
+      { key: '総合満足度', label: '総合的な満足度', color: '#3b82f6' },
+    ]
+  },
+  {
+    groupName: '講義内容',
+    items: [
+      { key: '学習量', label: '講義内容の学習量', color: '#8b5cf6' },
+      { key: '理解度', label: '講義内容の理解度', color: '#ec4899' },
+      { key: '運営', label: '講義中の運営アナウンス', color: '#f59e0b' },
+    ]
+  },
+  {
+    groupName: '講師評価',
+    items: [
+      { key: '講師満足度', label: '講師の総合的な満足度', color: '#10b981' },
+      { key: '時間使い方', label: '講師の授業時間の使い方', color: '#06b6d4' },
+      { key: '質問対応', label: '講師の質問対応', color: '#6366f1' },
+      { key: '話し方', label: '講師の話し方', color: '#f43f5e' },
+    ]
+  },
+  {
+    groupName: '受講生の自己評価',
+    items: [
+      { key: '予習', label: '自身の予習', color: '#84cc16' },
+      { key: '意欲', label: '自身の意欲', color: '#a855f7' },
+      { key: '今後活用', label: '自身の今後への活用', color: '#0ea5e9' },
+    ]
+  },
 ];
+
+// フラットな評価項目リスト（グラフ描画用）
+const evaluationItems = evaluationItemGroups.flatMap(group => group.items);
 
 // 全体を通しての平均点（速報版と確定版）
 const overallAverages = {
@@ -279,7 +302,7 @@ function adjustScoreForAttribute(baseScore: number, attribute: StudentAttribute)
 
 export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsProps) {
   // チェックボックスで選択された項目を管理
-  const [selectedItems, setSelectedItems] = useState<string[]>(['総合満足度', '学習量', '理解度', '運営', '講師満足度']);
+  const [selectedItems, setSelectedItems] = useState<string[]>(['総合満足度', '講師満足度']);
 
   // チェックボックスの切り替え
   const toggleItem = (itemKey: string) => {
@@ -572,22 +595,31 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           <CardDescription>評価項目の推移（5点満点）- 表示したい項目を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* チェックボックスで項目を選択 */}
-          <div className="mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {evaluationItems.map((item) => (
-              <div key={item.key} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`item-${item.key}`}
-                  checked={selectedItems.includes(item.key)}
-                  onCheckedChange={() => toggleItem(item.key)}
-                />
-                <Label
-                  htmlFor={`item-${item.key}`}
-                  className="text-sm cursor-pointer"
-                  style={{ color: selectedItems.includes(item.key) ? item.color : undefined }}
-                >
-                  {item.label}
-                </Label>
+          {/* チェックボックスで項目を選択（グループ分け） */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {evaluationItemGroups.map((group) => (
+              <div key={group.groupName} className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 border-b border-gray-200 pb-1">
+                  {group.groupName}
+                </h4>
+                <div className="space-y-2">
+                  {group.items.map((item) => (
+                    <div key={item.key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`item-${item.key}`}
+                        checked={selectedItems.includes(item.key)}
+                        onCheckedChange={() => toggleItem(item.key)}
+                      />
+                      <Label
+                        htmlFor={`item-${item.key}`}
+                        className="text-sm cursor-pointer"
+                        style={{ color: selectedItems.includes(item.key) ? item.color : undefined }}
+                      >
+                        {item.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
