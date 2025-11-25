@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AlertCircle, ThumbsUp, ThumbsDown, Minus, TrendingUp, TrendingDown, Calendar, User, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -1143,40 +1144,52 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           <CardDescription>この講義回のNPSスコアと分類</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* NPSスコア */}
-            <div className={`${npsBgColor} rounded-lg p-6`}>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">NPSスコア</p>
-                <div className="flex items-center justify-center gap-2">
-                  {currentNPS.score >= 0 ? (
-                    <TrendingUp className={`h-6 w-6 ${npsColor}`} />
-                  ) : (
-                    <TrendingDown className={`h-6 w-6 ${npsColor}`} />
-                  )}
-                  <span className={`text-4xl ${npsColor}`}>
-                    {currentNPS.score > 0 ? '+' : ''}{currentNPS.score.toFixed(1)}
-                  </span>
+          {(() => {
+            const total = currentNPS.promoters + currentNPS.neutrals + currentNPS.detractors;
+            const promotersPercent = total > 0 ? (currentNPS.promoters / total) * 100 : 0;
+            const neutralsPercent = total > 0 ? (currentNPS.neutrals / total) * 100 : 0;
+            const detractorsPercent = total > 0 ? (currentNPS.detractors / total) * 100 : 0;
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* NPSスコア */}
+                <div className={`${npsBgColor} rounded-lg p-6`}>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-2">NPSスコア</p>
+                    <div className="flex items-center justify-center gap-2">
+                      {currentNPS.score >= 0 ? (
+                        <TrendingUp className={`h-6 w-6 ${npsColor}`} />
+                      ) : (
+                        <TrendingDown className={`h-6 w-6 ${npsColor}`} />
+                      )}
+                      <span className={`text-4xl ${npsColor}`}>
+                        {currentNPS.score > 0 ? '+' : ''}{currentNPS.score.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* NPS内訳 */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">推奨者（9-10点）</span>
+                    <span className="text-sm">{currentNPS.promoters}人（{promotersPercent.toFixed(1)}%）</span>
+                  </div>
+                  <Progress value={promotersPercent} className="h-2" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">中立者（7-8点）</span>
+                    <span className="text-sm">{currentNPS.neutrals}人（{neutralsPercent.toFixed(1)}%）</span>
+                  </div>
+                  <Progress value={neutralsPercent} className="h-2" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">批判者（0-6点）</span>
+                    <span className="text-sm">{currentNPS.detractors}人（{detractorsPercent.toFixed(1)}%）</span>
+                  </div>
+                  <Progress value={detractorsPercent} className="h-2" />
                 </div>
               </div>
-            </div>
-
-            {/* NPS内訳 */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">推奨者（9-10点）</span>
-                <span className="text-sm">{currentNPS.promoters}人</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">中立者（7-8点）</span>
-                <span className="text-sm">{currentNPS.neutrals}人</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">批判者（0-6点）</span>
-                <span className="text-sm">{currentNPS.detractors}人</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

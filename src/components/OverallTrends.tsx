@@ -365,6 +365,14 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
     detractors: Math.max(0, Math.min(100, baseBreakdown.detractors + attributeBreakdownAdjust[studentAttribute].detractors))
   };
 
+  // NPS回答者数を計算（全講義回の合計回答数を基に計算）
+  const totalResponses = currentResponseRetention.reduce((sum, item) => sum + item.responses, 0);
+  const npsRespondents = {
+    promoters: Math.round(totalResponses * npsBreakdown.promoters / 100),
+    neutrals: Math.round(totalResponses * npsBreakdown.neutrals / 100),
+    detractors: Math.round(totalResponses * npsBreakdown.detractors / 100)
+  };
+
   return (
     <div className="space-y-6">
       {/* 講義回情報一覧 */}
@@ -513,17 +521,17 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
             <div className="mt-6 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm">推奨者（9-10点）</span>
-                <span className="text-sm">{npsBreakdown.promoters}%</span>
+                <span className="text-sm">{npsRespondents.promoters}人（{npsBreakdown.promoters}%）</span>
               </div>
               <Progress value={npsBreakdown.promoters} className="h-2" />
               <div className="flex justify-between items-center">
                 <span className="text-sm">中立者（7-8点）</span>
-                <span className="text-sm">{npsBreakdown.neutrals}%</span>
+                <span className="text-sm">{npsRespondents.neutrals}人（{npsBreakdown.neutrals}%）</span>
               </div>
               <Progress value={npsBreakdown.neutrals} className="h-2" />
               <div className="flex justify-between items-center">
                 <span className="text-sm">批判者（0-6点）</span>
-                <span className="text-sm">{npsBreakdown.detractors}%</span>
+                <span className="text-sm">{npsRespondents.detractors}人（{npsBreakdown.detractors}%）</span>
               </div>
               <Progress value={npsBreakdown.detractors} className="h-2" />
             </div>
