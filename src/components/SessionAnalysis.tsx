@@ -1148,155 +1148,156 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
         </Card>
       )}
 
-      {/* 当該回の評価詳細 */}
+      {/* NPSと評価内訳 + レーダーチャート（横並び） */}
       {selectedSession && (
-      <Card>
-        <CardHeader>
-          <CardTitle>NPSと評価内訳</CardTitle>
-          <CardDescription>この講義回のNPSスコアと分類</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(() => {
-            const total = currentNPS.promoters + currentNPS.neutrals + currentNPS.detractors;
-            const promotersPercent = total > 0 ? (currentNPS.promoters / total) * 100 : 0;
-            const neutralsPercent = total > 0 ? (currentNPS.neutrals / total) * 100 : 0;
-            const detractorsPercent = total > 0 ? (currentNPS.detractors / total) * 100 : 0;
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 当該回の評価詳細 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>NPSと評価内訳</CardTitle>
+              <CardDescription>この講義回のNPSスコアと分類</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const total = currentNPS.promoters + currentNPS.neutrals + currentNPS.detractors;
+                const promotersPercent = total > 0 ? (currentNPS.promoters / total) * 100 : 0;
+                const neutralsPercent = total > 0 ? (currentNPS.neutrals / total) * 100 : 0;
+                const detractorsPercent = total > 0 ? (currentNPS.detractors / total) * 100 : 0;
 
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* NPSスコア */}
-                <div className={`${npsBgColor} rounded-lg p-6`}>
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">NPSスコア</p>
-                    <div className="flex items-center justify-center gap-2">
-                      {currentNPS.score >= 0 ? (
-                        <TrendingUp className={`h-6 w-6 ${npsColor}`} />
-                      ) : (
-                        <TrendingDown className={`h-6 w-6 ${npsColor}`} />
-                      )}
-                      <span className={`text-4xl ${npsColor}`}>
-                        {currentNPS.score > 0 ? '+' : ''}{currentNPS.score.toFixed(1)}
-                      </span>
+                return (
+                  <div className="space-y-6">
+                    {/* NPSスコア */}
+                    <div className={`${npsBgColor} rounded-lg p-6`}>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-2">NPSスコア</p>
+                        <div className="flex items-center justify-center gap-2">
+                          {currentNPS.score >= 0 ? (
+                            <TrendingUp className={`h-6 w-6 ${npsColor}`} />
+                          ) : (
+                            <TrendingDown className={`h-6 w-6 ${npsColor}`} />
+                          )}
+                          <span className={`text-4xl ${npsColor}`}>
+                            {currentNPS.score > 0 ? '+' : ''}{currentNPS.score.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* NPS内訳 */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">推奨者（9-10点）</span>
+                        <span className="text-sm">{currentNPS.promoters}人（{promotersPercent.toFixed(1)}%）</span>
+                      </div>
+                      <Progress value={promotersPercent} className="h-2" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">中立者（7-8点）</span>
+                        <span className="text-sm">{currentNPS.neutrals}人（{neutralsPercent.toFixed(1)}%）</span>
+                      </div>
+                      <Progress value={neutralsPercent} className="h-2" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">批判者（0-6点）</span>
+                        <span className="text-sm">{currentNPS.detractors}人（{detractorsPercent.toFixed(1)}%）</span>
+                      </div>
+                      <Progress value={detractorsPercent} className="h-2" />
                     </div>
                   </div>
-                </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
 
-                {/* NPS内訳 */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">推奨者（9-10点）</span>
-                    <span className="text-sm">{currentNPS.promoters}人（{promotersPercent.toFixed(1)}%）</span>
-                  </div>
-                  <Progress value={promotersPercent} className="h-2" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">中立者（7-8点）</span>
-                    <span className="text-sm">{currentNPS.neutrals}人（{neutralsPercent.toFixed(1)}%）</span>
-                  </div>
-                  <Progress value={neutralsPercent} className="h-2" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">批判者（0-6点）</span>
-                    <span className="text-sm">{currentNPS.detractors}人（{detractorsPercent.toFixed(1)}%）</span>
-                  </div>
-                  <Progress value={detractorsPercent} className="h-2" />
-                </div>
-              </div>
-            );
-          })()}
-        </CardContent>
-      </Card>
-      )}
-
-      {/* 当該回の平均点一覧（レーダーチャート） */}
-      {selectedSession && (
-      <Card>
-        <CardHeader>
-          <CardTitle>全項目の平均点（レーダーチャート）</CardTitle>
-          <CardDescription>各評価項目の5点満点での平均スコア</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <RadarChart data={currentRadar}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="category" />
-              <PolarRadiusAxis angle={90} domain={[0, 5]} />
-              <Radar
-                name="平均点"
-                dataKey="score"
-                stroke="#3b82f6"
-                fill="#3b82f6"
-                fillOpacity={0.6}
-              />
-              <Legend />
-              <Tooltip />
-            </RadarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          {/* 当該回の平均点一覧（レーダーチャート） */}
+          <Card>
+            <CardHeader>
+              <CardTitle>全項目の平均点（レーダーチャート）</CardTitle>
+              <CardDescription>各評価項目の5点満点での平均スコア</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <RadarChart data={currentRadar}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="category" />
+                  <PolarRadiusAxis angle={90} domain={[0, 5]} />
+                  <Radar
+                    name="平均点"
+                    dataKey="score"
+                    stroke="#3b82f6"
+                    fill="#3b82f6"
+                    fillOpacity={0.6}
+                  />
+                  <Legend />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* 評価分布詳細（主要項目） */}
       {selectedSession && (
-      <Card>
-        <CardHeader>
-          <CardTitle>評価分布詳細</CardTitle>
-          <CardDescription>主要項目の段階評価分布</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* 総合満足度グループ */}
-            <div>
-              <h3 className="mb-3">総合満足度</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={currentDistribution.overall}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="rating" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>評価分布詳細</CardTitle>
+            <CardDescription>主要項目の段階評価分布（5点満点）</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="multiple" defaultValue={['overall']} className="w-full">
+              {/* 総合満足度 */}
+              <AccordionItem value="overall">
+                <AccordionTrigger>総合満足度</AccordionTrigger>
+                <AccordionContent>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={currentDistribution.overall} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="rating" type="category" width={40} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            {/* グループ別アコーディオン */}
-            <Accordion type="multiple" className="w-full">
               {/* 講義内容グループ */}
               <AccordionItem value="lecture-content">
                 <AccordionTrigger>講義内容</AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="mb-3">講義内容の学習量</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.学習量}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">学習量</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.学習量} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#8b5cf6" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">講義内容の理解度</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.理解度}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">理解度</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.理解度} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#ec4899" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">講義中の運営アナウンス</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.運営}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">運営アナウンス</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.運営} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#10b981" />
                         </BarChart>
@@ -1310,53 +1311,50 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
               <AccordionItem value="instructor">
                 <AccordionTrigger>講師評価</AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="mb-3">講師に対する総合的な満足度</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.講師満足度}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">総合満足度</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.講師満足度} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#f59e0b" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">講師の授業時間の使い方</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.時間使い方}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">時間の使い方</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.時間使い方} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#06b6d4" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">講師の質問対応</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.質問対応}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">質問対応</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.質問対応} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#6366f1" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">講師の話し方</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.話し方}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">話し方</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.話し方} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#f43f5e" />
                         </BarChart>
@@ -1370,40 +1368,38 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
               <AccordionItem value="self-evaluation">
                 <AccordionTrigger>受講生の自己評価</AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="mb-3">自身の予習</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.予習}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">予習</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.予習} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#84cc16" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">自身の意欲</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.意欲}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">意欲</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.意欲} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#a855f7" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-
-                    <div>
-                      <h4 className="mb-3">自身の今後への活用</h4>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={currentDistribution.今後活用}>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">今後への活用</h4>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={currentDistribution.今後活用} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="rating" />
-                          <YAxis />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="rating" type="category" width={35} tick={{ fontSize: 11 }} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#0ea5e9" />
                         </BarChart>
@@ -1413,114 +1409,113 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
 
       {/* 重要コメント */}
       {selectedSession && (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-orange-600" />
-            <CardTitle>重要コメント</CardTitle>
-          </div>
-          <CardDescription>優先的に確認すべきコメント</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {currentImportant.length > 0 ? (
-              currentImportant.map((comment) => (
-                <Alert key={comment.id}>
-                  <div className="flex items-start gap-3">
-                    {getSentimentIcon(comment.sentiment)}
-                    <div className="flex-1">
-                      <AlertTitle className="flex items-center gap-2 mb-2">
-                        {getSentimentBadge(comment.sentiment)}
-                        <Badge variant="outline">{comment.category}</Badge>
-                      </AlertTitle>
-                      <AlertDescription>{comment.text}</AlertDescription>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <CardTitle>重要コメント</CardTitle>
+            </div>
+            <CardDescription>優先的に確認すべきコメント</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {currentImportant.length > 0 ? (
+                currentImportant.map((comment) => (
+                  <Alert key={comment.id}>
+                    <div className="flex items-start gap-3">
+                      {getSentimentIcon(comment.sentiment)}
+                      <div className="flex-1">
+                        <AlertTitle className="flex items-center gap-2 mb-2">
+                          {getSentimentBadge(comment.sentiment)}
+                          <Badge variant="outline">{comment.category}</Badge>
+                        </AlertTitle>
+                        <AlertDescription>{comment.text}</AlertDescription>
+                      </div>
                     </div>
-                  </div>
-                </Alert>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-4">
+                  </Alert>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
                 この回には重要度の高いコメントがありません
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* コメント一覧 */}
       {selectedSession && (
-      <Card>
-        <CardHeader>
-          <CardTitle>コメント一覧</CardTitle>
-          <CardDescription>フィルタリングして表示</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div>
-              <label className="text-sm mb-2 block">感情分析</label>
-              <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  <SelectItem value="positive">ポジティブ</SelectItem>
-                  <SelectItem value="neutral">ニュートラル</SelectItem>
-                  <SelectItem value="negative">ネガティブ</SelectItem>
-                </SelectContent>
-              </Select>
+        <Card>
+          <CardHeader>
+            <CardTitle>コメント一覧</CardTitle>
+            <CardDescription>フィルタリングして表示</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div>
+                <label className="text-sm mb-2 block">感情分析</label>
+                <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="positive">ポジティブ</SelectItem>
+                    <SelectItem value="neutral">ニュートラル</SelectItem>
+                    <SelectItem value="negative">ネガティブ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm mb-2 block">カテゴリ</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="講義内容">講義内容</SelectItem>
+                    <SelectItem value="講義資料">講義資料</SelectItem>
+                    <SelectItem value="運営">運営</SelectItem>
+                    <SelectItem value="その他">その他</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <label className="text-sm mb-2 block">カテゴリ</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべて</SelectItem>
-                  <SelectItem value="講義内容">講義内容</SelectItem>
-                  <SelectItem value="講義資料">講義資料</SelectItem>
-                  <SelectItem value="運営">運営</SelectItem>
-                  <SelectItem value="その他">その他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">感情</TableHead>
-                  <TableHead className="w-[120px]">カテゴリ</TableHead>
-                  <TableHead>コメント</TableHead>
-                  <TableHead className="w-[100px]">重要度</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredComments.map((comment) => (
-                  <TableRow key={comment.id}>
-                    <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{comment.category}</Badge>
-                    </TableCell>
-                    <TableCell>{comment.text}</TableCell>
-                    <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">感情</TableHead>
+                    <TableHead className="w-[120px]">カテゴリ</TableHead>
+                    <TableHead>コメント</TableHead>
+                    <TableHead className="w-[100px]">重要度</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredComments.map((comment) => (
+                    <TableRow key={comment.id}>
+                      <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{comment.category}</Badge>
+                      </TableCell>
+                      <TableCell>{comment.text}</TableCell>
+                      <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
