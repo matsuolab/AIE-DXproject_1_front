@@ -17,8 +17,11 @@ const mockCourses: Course[] = [
     sessions: [
       { sessionNumber: 1, isSpecialSession: false, lectureDate: '2024-10-07', analysisTypes: ['速報版', '確定版'] },
       { sessionNumber: 2, isSpecialSession: false, lectureDate: '2024-10-14', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 3, isSpecialSession: false, lectureDate: '2024-10-21', analysisTypes: ['速報版'] },
-      { sessionNumber: 0, isSpecialSession: true, lectureDate: '2024-10-28', analysisTypes: ['速報版'] },
+      { sessionNumber: 3, isSpecialSession: false, lectureDate: '2024-10-21', analysisTypes: ['速報版', '確定版'] },
+      { sessionNumber: 4, isSpecialSession: false, lectureDate: '2024-10-28', analysisTypes: ['速報版', '確定版'] },
+      { sessionNumber: 0, isSpecialSession: true, lectureDate: '2024-11-04', analysisTypes: ['速報版', '確定版'] },
+      { sessionNumber: 5, isSpecialSession: false, lectureDate: '2024-11-11', analysisTypes: ['速報版', '確定版'] },
+      { sessionNumber: 6, isSpecialSession: false, lectureDate: '2024-11-18', analysisTypes: ['速報版'] },
     ],
   },
   {
