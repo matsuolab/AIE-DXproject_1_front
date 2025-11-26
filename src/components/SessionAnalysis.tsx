@@ -1074,7 +1074,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
       low: { variant: 'outline', className: '' },
     };
     const labels: Record<Importance, string> = {
-      high: '重要',
+      high: '高',
       medium: '中',
       low: '低',
     };
@@ -1424,7 +1424,10 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                   <AlertCircle className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">重要コメント</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    重要コメント
+                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 text-xs">重要度：高</Badge>
+                  </CardTitle>
                   <CardDescription>優先的に確認すべきコメント</CardDescription>
                 </div>
               </div>
@@ -1518,7 +1521,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
-                    <SelectItem value="high">重要</SelectItem>
+                    <SelectItem value="high">高</SelectItem>
                     <SelectItem value="medium">中</SelectItem>
                     <SelectItem value="low">低</SelectItem>
                   </SelectContent>
