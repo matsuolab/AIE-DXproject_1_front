@@ -6,7 +6,6 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AlertCircle, ThumbsUp, ThumbsDown, Minus, TrendingUp, TrendingDown, Calendar, User, BookOpen } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface Comment {
@@ -957,6 +956,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
   const [selectedSession, setSelectedSession] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [importanceFilter, setImportanceFilter] = useState<string>('all');
 
   // 基本データ取得
   const baseNPS = npsData[selectedSession]?.[analysisType] || npsData['第1回']['確定版'];
@@ -1027,7 +1027,8 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
   const filteredComments = currentComments.filter(comment => {
     const sentimentMatch = sentimentFilter === 'all' || comment.sentiment === sentimentFilter;
     const categoryMatch = categoryFilter === 'all' || comment.category === categoryFilter;
-    return sentimentMatch && categoryMatch;
+    const importanceMatch = importanceFilter === 'all' || comment.importance === importanceFilter;
+    return sentimentMatch && categoryMatch && importanceMatch;
   });
 
   const npsColor = currentNPS.score >= 0 ? 'text-green-600' : 'text-red-600';
@@ -1415,37 +1416,58 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
 
       {/* 重要コメント */}
       {selectedSession && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              <CardTitle>重要コメント</CardTitle>
-            </div>
-            <CardDescription>優先的に確認すべきコメント</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {currentImportant.length > 0 ? (
-                currentImportant.map((comment) => (
-                  <Alert key={comment.id}>
-                    <div className="flex items-start gap-3">
-                      {getSentimentIcon(comment.sentiment)}
-                      <div className="flex-1">
-                        <AlertTitle className="flex items-center gap-2 mb-2">
-                          {getSentimentBadge(comment.sentiment)}
-                          <Badge variant="outline">{comment.category}</Badge>
-                        </AlertTitle>
-                        <AlertDescription>{comment.text}</AlertDescription>
-                      </div>
-                    </div>
-                  </Alert>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                この回には重要度の高いコメントがありません
-                </p>
+        <Card className="border-orange-200 bg-orange-50/30">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">重要コメント</CardTitle>
+                  <CardDescription>優先的に確認すべきコメント</CardDescription>
+                </div>
+              </div>
+              {currentImportant.length > 0 && (
+                <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+                  {currentImportant.length}件
+                </Badge>
               )}
             </div>
+          </CardHeader>
+          <CardContent>
+            {currentImportant.length > 0 ? (
+              <div className="grid gap-4">
+                {currentImportant.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className={`p-4 rounded-lg border-l-4 bg-white shadow-sm ${
+                      comment.sentiment === 'positive'
+                        ? 'border-l-green-500'
+                        : comment.sentiment === 'negative'
+                          ? 'border-l-red-500'
+                          : 'border-l-gray-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {getSentimentIcon(comment.sentiment)}
+                      {getSentimentBadge(comment.sentiment)}
+                      <Badge variant="outline">{comment.category}</Badge>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="p-3 bg-gray-100 rounded-full w-fit mx-auto mb-3">
+                  <AlertCircle className="h-6 w-6 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500">
+                  この回には重要度の高いコメントがありません
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -1460,7 +1482,7 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
           <CardContent>
             <div className="flex flex-wrap gap-4 mb-4">
               <div>
-                <label className="text-sm mb-2 block">感情分析</label>
+                <label className="text-sm mb-2 block">感情</label>
                 <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
@@ -1488,6 +1510,20 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm mb-2 block">重要度</label>
+                <Select value={importanceFilter} onValueChange={setImportanceFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="high">重要</SelectItem>
+                    <SelectItem value="medium">中</SelectItem>
+                    <SelectItem value="low">低</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="border rounded-lg">
@@ -1496,8 +1532,8 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                   <TableRow>
                     <TableHead className="w-[100px]">感情</TableHead>
                     <TableHead className="w-[120px]">カテゴリ</TableHead>
-                    <TableHead>コメント</TableHead>
                     <TableHead className="w-[100px]">重要度</TableHead>
+                    <TableHead>コメント</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1507,8 +1543,8 @@ export function SessionAnalysis({ analysisType, studentAttribute }: SessionAnaly
                       <TableCell>
                         <Badge variant="outline">{comment.category}</Badge>
                       </TableCell>
-                      <TableCell>{comment.text}</TableCell>
                       <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
+                      <TableCell>{comment.text}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
