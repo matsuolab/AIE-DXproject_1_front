@@ -19,9 +19,7 @@ interface CourseDashboardProps {
 export type AnalysisTypeLabel = '速報版' | '確定版';
 export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
 
-export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSessions: _courseSessions, allCourses }: CourseDashboardProps) {
-  // _courseSessions は Phase 3 で SessionAnalysis に渡す予定
-  void _courseSessions;
+export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSessions, allCourses }: CourseDashboardProps) {
   const [analysisType, setAnalysisType] = useState<AnalysisTypeLabel>('確定版');
   const [studentAttribute, setStudentAttribute] = useState<StudentAttributeLabel>('全体');
 
@@ -92,19 +90,30 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
         </TabsList>
 
         <TabsContent value="overall" className="mt-6">
-          <OverallTrends courseName={courseName} analysisType={analysisType} studentAttribute={studentAttribute} />
+          <OverallTrends
+            courseName={courseName}
+            courseYear={courseYear}
+            coursePeriod={coursePeriod}
+            analysisType={analysisType}
+            studentAttribute={studentAttribute}
+          />
         </TabsContent>
 
         <TabsContent value="session" className="mt-6">
-          <SessionAnalysis analysisType={analysisType} studentAttribute={studentAttribute} />
+          <SessionAnalysis
+            courseSessions={courseSessions}
+            analysisType={analysisType}
+            studentAttribute={studentAttribute}
+          />
         </TabsContent>
 
         <TabsContent value="comparison" className="mt-6">
-          <YearComparison 
+          <YearComparison
             currentCourseName={courseName}
             currentYear={courseYear}
             currentPeriod={coursePeriod}
             allCourses={allCourses}
+            analysisType={analysisType}
           />
         </TabsContent>
       </Tabs>

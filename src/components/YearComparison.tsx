@@ -1,114 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Info } from 'lucide-react';
-import { formatAcademicYear } from '../lib/course-utils';
-import type { CourseItem } from '../types/api';
+import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle } from 'lucide-react';
+import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
+import { fetchYearComparison } from '../api/client';
+import type { CourseItem, YearComparisonResponse } from '../types/api';
+import { AnalysisTypeFromLabel } from '../types/api';
 
-// 型定義追加
-interface YearlyNPSPoint { session: string; nps: number }
-interface YearlyCategoryScore { category: string; score: number }
-interface YearlyMetric { averageNPS: number; averageOverall: number; averageInstructor: number; responseRate: number; totalResponses: number }
+// UI表示用の型
+type AnalysisTypeLabel = '速報版' | '確定版';
 
 interface YearComparisonProps {
   currentCourseName: string;
   currentYear: number;       // 年度（例: 2024）
   currentPeriod: string;
   allCourses: CourseItem[];
+  analysisType: AnalysisTypeLabel;
 }
 
-// モックデータ - 年度別NPS推移
-const yearlyNPSData: Record<string, YearlyNPSPoint[]> = {
-  '2024年度': [
-    { session: '第1回', nps: 15.5 },
-    { session: '第2回', nps: 22.3 },
-    { session: '第3回', nps: 18.7 },
-    { session: '第4回', nps: 28.4 },
-    { session: '第5回', nps: 31.2 },
-    { session: '第6回', nps: 35.8 },
-  ],
-  '2023年度': [
-    { session: '第1回', nps: 12.3 },
-    { session: '第2回', nps: 18.5 },
-    { session: '第3回', nps: 16.2 },
-    { session: '第4回', nps: 24.1 },
-    { session: '第5回', nps: 27.8 },
-    { session: '第6回', nps: 30.5 },
-  ],
-  '2022年度': [
-    { session: '第1回', nps: 10.8 },
-    { session: '第2回', nps: 15.2 },
-    { session: '第3回', nps: 14.5 },
-    { session: '第4回', nps: 20.3 },
-    { session: '第5回', nps: 23.6 },
-    { session: '第6回', nps: 26.9 },
-  ],
-};
-
-// 年度別カテゴリ平均スコア
-const yearlyCategoryData: Record<string, YearlyCategoryScore[]> = {
-  '2024年度': [
-    { category: '総合満足度', score: 4.35 },
-    { category: '学習量', score: 4.28 },
-    { category: '理解度', score: 4.15 },
-    { category: '運営', score: 4.32 },
-    { category: '講師満足度', score: 4.62 },
-    { category: '時間使い方', score: 4.58 },
-    { category: '質問対応', score: 4.65 },
-    { category: '話し方', score: 4.55 },
-  ],
-  '2023年度': [
-    { category: '総合満足度', score: 4.20 },
-    { category: '学習量', score: 4.15 },
-    { category: '理解度', score: 4.05 },
-    { category: '運営', score: 4.18 },
-    { category: '講師満足度', score: 4.48 },
-    { category: '時間使い方', score: 4.42 },
-    { category: '質問対応', score: 4.52 },
-    { category: '話し方', score: 4.45 },
-  ],
-  '2022年度': [
-    { category: '総合満足度', score: 4.10 },
-    { category: '学習量', score: 4.05 },
-    { category: '理解度', score: 3.95 },
-    { category: '運営', score: 4.08 },
-    { category: '講師満足度', score: 4.35 },
-    { category: '時間使い方', score: 4.30 },
-    { category: '質問対応', score: 4.40 },
-    { category: '話し方', score: 4.32 },
-  ],
-};
-
-// 年度別総合指標
-const yearlyMetrics: Record<string, YearlyMetric> = {
-  '2024年度': {
-    averageNPS: 25.2,
-    averageOverall: 4.35,
-    averageInstructor: 4.62,
-    responseRate: 90,
-    totalResponses: 450,
-  },
-  '2023年度': {
-    averageNPS: 21.8,
-    averageOverall: 4.20,
-    averageInstructor: 4.48,
-    responseRate: 85,
-    totalResponses: 420,
-  },
-  '2022年度': {
-    averageNPS: 18.5,
-    averageOverall: 4.10,
-    averageInstructor: 4.35,
-    responseRate: 82,
-    totalResponses: 390,
-  },
-};
-
-export function YearComparison({ currentCourseName, currentYear, currentPeriod, allCourses }: YearComparisonProps) {
+export function YearComparison({ currentCourseName, currentYear, currentPeriod, allCourses, analysisType }: YearComparisonProps) {
   const [comparisonYear, setComparisonYear] = useState('');
   const [comparisonPeriod, setComparisonPeriod] = useState('');
+  const [data, setData] = useState<YearComparisonResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 表示用の年度文字列
   const currentYearDisplay = formatAcademicYear(currentYear);
@@ -119,37 +36,69 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
     .map(c => ({ year: formatAcademicYear(c.academic_year), period: c.term, key: `${formatAcademicYear(c.academic_year)}_${c.term}` }))
     .filter((item, index, self) => self.findIndex(t => t.key === item.key) === index);
 
-  const currentYearData = yearlyMetrics[currentYearDisplay] || yearlyMetrics['2024年度'];
-  const comparisonYearData = comparisonYear ? yearlyMetrics[comparisonYear] : null;
+  // データ取得
+  const loadData = useCallback(async () => {
+    if (!comparisonYear || !comparisonPeriod) return;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const apiAnalysisType = AnalysisTypeFromLabel[analysisType];
+      const comparisonYearNum = parseAcademicYear(comparisonYear);
+
+      const response = await fetchYearComparison({
+        name: currentCourseName,
+        current_year: currentYear,
+        current_term: currentPeriod,
+        compare_year: comparisonYearNum,
+        compare_term: comparisonPeriod,
+        batch_type: apiAnalysisType,
+      });
+      setData(response);
+    } catch (err) {
+      console.error('Failed to fetch year comparison:', err);
+      setError('比較データの取得に失敗しました');
+      setData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentCourseName, currentYear, currentPeriod, comparisonYear, comparisonPeriod, analysisType]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const currentYearPeriodLabel = `${currentYearDisplay} ${currentPeriod}`;
   const comparisonYearPeriodLabel = comparisonYear && comparisonPeriod ? `${comparisonYear} ${comparisonPeriod}` : '';
 
   // 比較用のNPSデータを統合
   const getCombinedNPSData = () => {
-    if (!comparisonYear) return [];
+    if (!data) return [];
 
-    const current = yearlyNPSData[currentYearDisplay] || yearlyNPSData['2024年度'];
-    const comparison = yearlyNPSData[comparisonYear] || yearlyNPSData['2023年度'];
+    const maxLen = Math.max(data.nps_trends.current.length, data.nps_trends.comparison.length);
+    const result = [];
 
-    return current.map((item, index) => ({
-      session: item.session,
-      [currentYearPeriodLabel]: item.nps,
-      [comparisonYearPeriodLabel]: comparison[index]?.nps || 0,
-    }));
+    for (let i = 0; i < maxLen; i++) {
+      const currentItem = data.nps_trends.current[i];
+      const comparisonItem = data.nps_trends.comparison[i];
+      result.push({
+        session: currentItem?.session || comparisonItem?.session || '',
+        [currentYearPeriodLabel]: currentItem?.nps_score ?? null,
+        [comparisonYearPeriodLabel]: comparisonItem?.nps_score ?? null,
+      });
+    }
+
+    return result;
   };
 
   // 比較用のカテゴリデータを統合
   const getCombinedCategoryData = () => {
-    if (!comparisonYear) return [];
+    if (!data) return [];
 
-    const current = yearlyCategoryData[currentYearDisplay] || yearlyCategoryData['2024年度'];
-    const comparison = yearlyCategoryData[comparisonYear] || yearlyCategoryData['2023年度'];
-
-    return current.map((item, index) => ({
+    return data.score_comparison.map(item => ({
       category: item.category,
-      [currentYearPeriodLabel]: item.score,
-      [comparisonYearPeriodLabel]: comparison[index]?.score || 0,
+      [currentYearPeriodLabel]: item.current_score,
+      [comparisonYearPeriodLabel]: item.comparison_score,
     }));
   };
 
@@ -184,8 +133,8 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
               <div className="space-y-2">
                 <label className="text-sm">比較する年度</label>
                 {availableYearPeriods.length > 0 ? (
-                  <Select 
-                    value={comparisonYear ? `${comparisonYear}_${comparisonPeriod}` : ''} 
+                  <Select
+                    value={comparisonYear ? `${comparisonYear}_${comparisonPeriod}` : ''}
                     onValueChange={(value) => {
                       const selected = availableYearPeriods.find(item => item.key === value);
                       if (selected) {
@@ -219,8 +168,32 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
         </CardContent>
       </Card>
 
+      {/* ローディング */}
+      {isLoading && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              <span className="text-gray-500">比較データを取得中...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* エラー */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="py-6">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 比較が選択されている場合のみ表示 */}
-      {comparisonYear && comparisonYearData && (
+      {comparisonYear && comparisonPeriod && data && !isLoading && (
         <>
           {/* 総合指標の比較 */}
           <Card>
@@ -235,10 +208,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                   <CardContent className="pt-6">
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-2">平均NPS</p>
-                      <p className="text-2xl mb-1">{currentYearData.averageNPS.toFixed(1)}</p>
+                      <p className="text-2xl mb-1">{data.current.average_nps.toFixed(1)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
-                          const diff = calculateDifference(currentYearData.averageNPS, comparisonYearData.averageNPS);
+                          const diff = calculateDifference(data.current.average_nps, data.comparison.average_nps);
                           return (
                             <>
                               {diff.isPositive ? (
@@ -254,7 +227,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        前年: {comparisonYearData.averageNPS.toFixed(1)}
+                        比較: {data.comparison.average_nps.toFixed(1)}
                       </p>
                     </div>
                   </CardContent>
@@ -265,10 +238,13 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                   <CardContent className="pt-6">
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-2">総合満足度</p>
-                      <p className="text-2xl mb-1">{currentYearData.averageOverall.toFixed(2)}</p>
+                      <p className="text-2xl mb-1">{data.current.average_scores.overall_satisfaction.toFixed(2)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
-                          const diff = calculateDifference(currentYearData.averageOverall, comparisonYearData.averageOverall);
+                          const diff = calculateDifference(
+                            data.current.average_scores.overall_satisfaction,
+                            data.comparison.average_scores.overall_satisfaction
+                          );
                           return (
                             <>
                               {diff.isPositive ? (
@@ -284,7 +260,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        前年: {comparisonYearData.averageOverall.toFixed(2)}
+                        比較: {data.comparison.average_scores.overall_satisfaction.toFixed(2)}
                       </p>
                     </div>
                   </CardContent>
@@ -295,10 +271,13 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                   <CardContent className="pt-6">
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-2">講師満足度</p>
-                      <p className="text-2xl mb-1">{currentYearData.averageInstructor.toFixed(2)}</p>
+                      <p className="text-2xl mb-1">{data.current.average_scores.instructor_satisfaction.toFixed(2)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
-                          const diff = calculateDifference(currentYearData.averageInstructor, comparisonYearData.averageInstructor);
+                          const diff = calculateDifference(
+                            data.current.average_scores.instructor_satisfaction,
+                            data.comparison.average_scores.instructor_satisfaction
+                          );
                           return (
                             <>
                               {diff.isPositive ? (
@@ -314,21 +293,21 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        前年: {comparisonYearData.averageInstructor.toFixed(2)}
+                        比較: {data.comparison.average_scores.instructor_satisfaction.toFixed(2)}
                       </p>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* 回答率 */}
+                {/* 総回答数 */}
                 <Card className="bg-gray-50">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">回答率</p>
-                      <p className="text-2xl mb-1">{currentYearData.responseRate}%</p>
+                      <p className="text-sm text-gray-600 mb-2">総回答数</p>
+                      <p className="text-2xl mb-1">{data.current.total_responses}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
-                          const diff = calculateDifference(currentYearData.responseRate, comparisonYearData.responseRate);
+                          const diff = calculateDifference(data.current.total_responses, data.comparison.total_responses);
                           return (
                             <>
                               {diff.isPositive ? (
@@ -337,14 +316,14 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                                 <TrendingDown className="h-4 w-4 text-red-600" />
                               )}
                               <span className={diff.isPositive ? 'text-green-600' : 'text-red-600'}>
-                                {diff.formatted}%
+                                {diff.formatted}
                               </span>
                             </>
                           );
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        前年: {comparisonYearData.responseRate}%
+                        比較: {data.comparison.total_responses}
                       </p>
                     </div>
                   </CardContent>
@@ -367,20 +346,22 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey={currentYearPeriodLabel} 
-                    stroke="#3b82f6" 
+                  <Line
+                    type="monotone"
+                    dataKey={currentYearPeriodLabel}
+                    stroke="#3b82f6"
                     strokeWidth={3}
                     dot={{ r: 5 }}
+                    connectNulls
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey={comparisonYearPeriodLabel} 
-                    stroke="#94a3b8" 
+                  <Line
+                    type="monotone"
+                    dataKey={comparisonYearPeriodLabel}
+                    stroke="#94a3b8"
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     dot={{ r: 4 }}
+                    connectNulls
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -422,9 +403,39 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                     <span className="text-green-900">改善された点</span>
                   </h4>
                   <ul className="text-sm text-green-800 space-y-1 ml-7">
-                    <li>• NPSスコアが前年度比で{calculateDifference(currentYearData.averageNPS, comparisonYearData.averageNPS).formatted}ポイント向上</li>
-                    <li>• 総合満足度が{calculateDifference(currentYearData.averageOverall, comparisonYearData.averageOverall).formatted}ポイント改善</li>
-                    <li>• アンケート回答率が{calculateDifference(currentYearData.responseRate, comparisonYearData.responseRate).formatted}%増加</li>
+                    {data.score_comparison
+                      .filter(item => item.difference > 0)
+                      .slice(0, 3)
+                      .map(item => (
+                        <li key={item.category_key}>
+                          • {item.category}が+{item.difference.toFixed(2)}ポイント向上
+                        </li>
+                      ))}
+                    {data.current.average_nps > data.comparison.average_nps && (
+                      <li>
+                        • NPSスコアが{calculateDifference(data.current.average_nps, data.comparison.average_nps).formatted}ポイント向上
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="flex items-center gap-2 mb-2">
+                    <TrendingDown className="h-5 w-5 text-yellow-600" />
+                    <span className="text-yellow-900">要改善点</span>
+                  </h4>
+                  <ul className="text-sm text-yellow-800 space-y-1 ml-7">
+                    {data.score_comparison
+                      .filter(item => item.difference < 0)
+                      .slice(0, 3)
+                      .map(item => (
+                        <li key={item.category_key}>
+                          • {item.category}が{item.difference.toFixed(2)}ポイント低下
+                        </li>
+                      ))}
+                    {data.score_comparison.filter(item => item.difference < 0).length === 0 && (
+                      <li>• 全項目で前年度比で改善または維持されています</li>
+                    )}
                   </ul>
                 </div>
 
