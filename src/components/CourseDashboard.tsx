@@ -3,23 +3,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { OverallTrends } from './OverallTrends';
 import { SessionAnalysis } from './SessionAnalysis';
 import { YearComparison } from './YearComparison';
-import type { Course } from './CourseList';
+import { formatAcademicYear } from '../lib/course-utils';
+import type { CourseItem, SessionSummary } from '../types/api';
 import { Card } from './ui/card';
 
 interface CourseDashboardProps {
-  courseId: string;
   courseName: string;
-  courseYear: string;
-  coursePeriod: string;
-  allCourses: Course[];
+  courseYear: number;        // 年度（例: 2024）
+  coursePeriod: string;      // 期間（例: "10月～12月"）
+  courseSessions: SessionSummary[];  // 講義回サマリー
+  allCourses: CourseItem[];
 }
 
-export type AnalysisType = '速報版' | '確定版';
-export type StudentAttribute = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
+// UI表示用の分析タイプ（日本語）
+export type AnalysisTypeLabel = '速報版' | '確定版';
+export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
 
-export function CourseDashboard({ courseName, courseYear, coursePeriod, allCourses }: CourseDashboardProps) {
-  const [analysisType, setAnalysisType] = useState<AnalysisType>('確定版');
-  const [studentAttribute, setStudentAttribute] = useState<StudentAttribute>('全体');
+export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSessions: _courseSessions, allCourses }: CourseDashboardProps) {
+  // _courseSessions は Phase 3 で SessionAnalysis に渡す予定
+  void _courseSessions;
+  const [analysisType, setAnalysisType] = useState<AnalysisTypeLabel>('確定版');
+  const [studentAttribute, setStudentAttribute] = useState<StudentAttributeLabel>('全体');
+
+  // 表示用の年度文字列
+  const courseYearDisplay = formatAcademicYear(courseYear);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -27,7 +34,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, allCours
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl mb-2">{courseName}</h1>
-          <p className="text-gray-600">{courseYear} {coursePeriod}</p>
+          <p className="text-gray-600">{courseYearDisplay} {coursePeriod}</p>
         </div>
         
         {/* データバージョン選択 - 右上に配置 */}
@@ -35,7 +42,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, allCours
           <span className="text-xs text-gray-500">
             {analysisType === '速報版' ? '講義翌日のデータを表示中' : 'アンケート締切後の確定データを表示中'}
           </span>
-          <Tabs value={analysisType} onValueChange={(value) => setAnalysisType(value as AnalysisType)}>
+          <Tabs value={analysisType} onValueChange={(value) => setAnalysisType(value as AnalysisTypeLabel)}>
             <TabsList className="grid w-[220px] grid-cols-2">
               <TabsTrigger 
                 value="速報版"
@@ -64,7 +71,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, allCours
                 👥 分析対象の受講生属性を選択
               </p>
             </div>
-            <Tabs value={studentAttribute} onValueChange={(value) => setStudentAttribute(value as StudentAttribute)}>
+            <Tabs value={studentAttribute} onValueChange={(value) => setStudentAttribute(value as StudentAttributeLabel)}>
               <TabsList className="grid w-[500px] grid-cols-5">
                 <TabsTrigger value="全体">全体</TabsTrigger>
                 <TabsTrigger value="学生">学生</TabsTrigger>

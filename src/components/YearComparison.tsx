@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Alert, AlertDescription } from './ui/alert';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Info } from 'lucide-react';
-import type { Course } from './CourseList';
+import { formatAcademicYear } from '../lib/course-utils';
+import type { CourseItem } from '../types/api';
 
 // 型定義追加
 interface YearlyNPSPoint { session: string; nps: number }
@@ -13,9 +14,9 @@ interface YearlyMetric { averageNPS: number; averageOverall: number; averageInst
 
 interface YearComparisonProps {
   currentCourseName: string;
-  currentYear: string;
+  currentYear: number;       // 年度（例: 2024）
   currentPeriod: string;
-  allCourses: Course[];
+  allCourses: CourseItem[];
 }
 
 // モックデータ - 年度別NPS推移
@@ -109,25 +110,28 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
   const [comparisonYear, setComparisonYear] = useState('');
   const [comparisonPeriod, setComparisonPeriod] = useState('');
 
+  // 表示用の年度文字列
+  const currentYearDisplay = formatAcademicYear(currentYear);
+
   // 同じ講座名の他の年度・期間を取得
   const availableYearPeriods = allCourses
-    .filter(c => c.name === currentCourseName && (c.year !== currentYear || c.period !== currentPeriod))
-    .map(c => ({ year: c.year, period: c.period, key: `${c.year}_${c.period}` }))
+    .filter(c => c.name === currentCourseName && (c.academic_year !== currentYear || c.term !== currentPeriod))
+    .map(c => ({ year: formatAcademicYear(c.academic_year), period: c.term, key: `${formatAcademicYear(c.academic_year)}_${c.term}` }))
     .filter((item, index, self) => self.findIndex(t => t.key === item.key) === index);
 
-  const currentYearData = yearlyMetrics[currentYear] || yearlyMetrics['2024年度'];
+  const currentYearData = yearlyMetrics[currentYearDisplay] || yearlyMetrics['2024年度'];
   const comparisonYearData = comparisonYear ? yearlyMetrics[comparisonYear] : null;
 
-  const currentYearPeriodLabel = `${currentYear} ${currentPeriod}`;
+  const currentYearPeriodLabel = `${currentYearDisplay} ${currentPeriod}`;
   const comparisonYearPeriodLabel = comparisonYear && comparisonPeriod ? `${comparisonYear} ${comparisonPeriod}` : '';
 
   // 比較用のNPSデータを統合
   const getCombinedNPSData = () => {
     if (!comparisonYear) return [];
-    
-    const current = yearlyNPSData[currentYear] || yearlyNPSData['2024年度'];
+
+    const current = yearlyNPSData[currentYearDisplay] || yearlyNPSData['2024年度'];
     const comparison = yearlyNPSData[comparisonYear] || yearlyNPSData['2023年度'];
-    
+
     return current.map((item, index) => ({
       session: item.session,
       [currentYearPeriodLabel]: item.nps,
@@ -138,10 +142,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
   // 比較用のカテゴリデータを統合
   const getCombinedCategoryData = () => {
     if (!comparisonYear) return [];
-    
-    const current = yearlyCategoryData[currentYear] || yearlyCategoryData['2024年度'];
+
+    const current = yearlyCategoryData[currentYearDisplay] || yearlyCategoryData['2024年度'];
     const comparison = yearlyCategoryData[comparisonYear] || yearlyCategoryData['2023年度'];
-    
+
     return current.map((item, index) => ({
       category: item.category,
       [currentYearPeriodLabel]: item.score,
@@ -174,7 +178,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
               <div className="space-y-2">
                 <label className="text-sm">現在の年度</label>
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="font-medium text-blue-900">{currentYear} {currentPeriod}</p>
+                  <p className="font-medium text-blue-900">{currentYearDisplay} {currentPeriod}</p>
                 </div>
               </div>
               <div className="space-y-2">

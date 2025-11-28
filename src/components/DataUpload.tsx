@@ -11,38 +11,28 @@ import { Textarea } from './ui/textarea';
 import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { detectPrivacyColumns, type PrivacyColumnDetectionResult } from '../lib/pii-detector';
+import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
+import type { CourseItem } from '../types/api';
 
 interface DataUploadProps {
   onComplete: () => void;
-  existingCourses: Array<{
-    id: string;
-    name: string;
-    year: string;
-    period: string;
-    responseCount: number;
-    sessions?: Array<{
-      sessionNumber: number;
-      isSpecialSession: boolean;
-      lectureDate: string;
-      analysisTypes: Array<'速報版' | '確定版'>;
-    }>;
-  }>;
+  existingCourses: CourseItem[];
 }
 
-export type AnalysisType = '速報版' | '確定版';
+export type AnalysisTypeLabel = '速報版' | '確定版';
 
 export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isNewCourse, setIsNewCourse] = useState(false);
   const [selectedCourseName, setSelectedCourseName] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');  // 表示用: "2024年度"
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [courseName, setCourseName] = useState('');
-  const [year, setYear] = useState('');
+  const [year, setYear] = useState('');  // 表示用: "2024年度"
   const [period, setPeriod] = useState('');
   const [sessionNumber, setSessionNumber] = useState('');
-  const [analysisType, setAnalysisType] = useState<AnalysisType>('速報版');
+  const [analysisType, setAnalysisType] = useState<AnalysisTypeLabel>('速報版');
   const [zoomParticipants, setZoomParticipants] = useState('');
   const [recordingViews, setRecordingViews] = useState('');
   const [instructorName, setInstructorName] = useState('');
@@ -58,33 +48,37 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   // 既存講座選択時に派生させる講座情報（stateに二重保持しない）
   const selectedCourse = useMemo(() => {
     if (!isNewCourse && selectedCourseName && selectedYear && selectedPeriod) {
+      const yearNum = parseAcademicYear(selectedYear);
       return existingCourses.find(
-        c => c.name === selectedCourseName && c.year === selectedYear && c.period === selectedPeriod
+        c => c.name === selectedCourseName && c.academic_year === yearNum && c.term === selectedPeriod
       );
     }
     return undefined;
   }, [isNewCourse, selectedCourseName, selectedYear, selectedPeriod, existingCourses]);
 
   const effectiveCourseName = isNewCourse ? courseName : (selectedCourse?.name || '');
-  const effectiveYear = isNewCourse ? year : (selectedCourse?.year || '');
-  const effectivePeriod = isNewCourse ? period : (selectedCourse?.period || '');
+  const effectiveYear = isNewCourse ? year : (selectedCourse ? formatAcademicYear(selectedCourse.academic_year) : '');
+  const effectivePeriod = isNewCourse ? period : (selectedCourse?.term || '');
 
   const duplicateDetected = useMemo(() => {
     if (!effectiveCourseName || !effectiveYear || !effectivePeriod || !analysisType || !lectureDate) return false;
     // 特別回でない場合は講義回も必要
     if (!isSpecialSession && !sessionNumber) return false;
 
+    const yearNum = parseAcademicYear(effectiveYear);
     const course = existingCourses.find(
-      c => c.name === effectiveCourseName && c.year === effectiveYear && c.period === effectivePeriod
+      c => c.name === effectiveCourseName && c.academic_year === yearNum && c.term === effectivePeriod
     );
     if (course && course.sessions) {
-      const sessionNum = isSpecialSession ? 0 : parseInt(sessionNumber);
+      // API型: session は "第1回", "特別回" などの文字列
+      const targetSession = isSpecialSession ? '特別回' : `第${sessionNumber}回`;
+      // 分析タイプを変換: '速報版' → 'preliminary', '確定版' → 'confirmed'
+      const apiAnalysisType = analysisType === '速報版' ? 'preliminary' : 'confirmed';
       const session = course.sessions.find(s =>
-        s.sessionNumber === sessionNum &&
-        s.lectureDate === lectureDate &&
-        s.isSpecialSession === isSpecialSession
+        s.session === targetSession &&
+        s.lecture_date === lectureDate
       );
-      return !!(session && session.analysisTypes.includes(analysisType));
+      return !!(session && session.analysis_types.includes(apiAnalysisType));
     }
     return false;
   }, [effectiveCourseName, effectiveYear, effectivePeriod, sessionNumber, analysisType, existingCourses, lectureDate, isSpecialSession]);
@@ -174,11 +168,11 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
 
   // 既存講座選択用のユニークな値を取得
   const uniqueCourseNames = Array.from(new Set(existingCourses.map(c => c.name)));
-  const filteredYears = selectedCourseName 
-    ? Array.from(new Set(existingCourses.filter(c => c.name === selectedCourseName).map(c => c.year)))
+  const filteredYears = selectedCourseName
+    ? Array.from(new Set(existingCourses.filter(c => c.name === selectedCourseName).map(c => formatAcademicYear(c.academic_year))))
     : [];
   const filteredPeriods = selectedCourseName && selectedYear
-    ? Array.from(new Set(existingCourses.filter(c => c.name === selectedCourseName && c.year === selectedYear).map(c => c.period)))
+    ? Array.from(new Set(existingCourses.filter(c => c.name === selectedCourseName && formatAcademicYear(c.academic_year) === selectedYear).map(c => c.term)))
     : [];
 
   // 既存講座選択時は派生値を使用するため effect での setState は不要
@@ -715,7 +709,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
               {/* 分析タイプ */}
               <div className="space-y-2">
                 <Label>分析タイプ *</Label>
-                <RadioGroup value={analysisType} onValueChange={(value) => setAnalysisType(value as AnalysisType)} disabled={isUploading}>
+                <RadioGroup value={analysisType} onValueChange={(value) => setAnalysisType(value as AnalysisTypeLabel)} disabled={isUploading}>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="速報版" id="quick" />
                     <Label htmlFor="quick" className="cursor-pointer">

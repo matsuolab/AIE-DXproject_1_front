@@ -7,12 +7,14 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { Trash2, AlertTriangle, BarChart3, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Course } from './CourseList';
+import { formatAcademicYear, parseAcademicYear, getCourseKey } from '../lib/course-utils';
+import type { CourseItem } from '../types/api';
+import { AnalysisTypeLabels } from '../types/api';
 
 interface DataDeleteProps {
-  courses: Course[];
+  courses: CourseItem[];
   onComplete: () => void;
-  onDelete: (courseId: string) => void;
+  onDelete: (courseKey: string) => void;
 }
 
 export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
@@ -26,75 +28,57 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
 
   // ユニークな値を取得
   const uniqueCourseNames = Array.from(new Set(courses.map(c => c.name)));
-  const filteredYears = selectedCourseName 
-    ? Array.from(new Set(courses.filter(c => c.name === selectedCourseName).map(c => c.year)))
+  const filteredYears = selectedCourseName
+    ? Array.from(new Set(courses.filter(c => c.name === selectedCourseName).map(c => formatAcademicYear(c.academic_year))))
     : [];
   const filteredPeriods = selectedCourseName && selectedYear
-    ? Array.from(new Set(courses.filter(c => c.name === selectedCourseName && c.year === selectedYear).map(c => c.period)))
+    ? Array.from(new Set(courses.filter(c => c.name === selectedCourseName && formatAcademicYear(c.academic_year) === selectedYear).map(c => c.term)))
     : [];
 
-  const selectedCourse = courses.find(
-    c => c.name === selectedCourseName && c.year === selectedYear && c.period === selectedPeriod
-  );
+  const selectedCourse = useMemo(() => {
+    if (!selectedCourseName || !selectedYear || !selectedPeriod) return undefined;
+    const yearNum = parseAcademicYear(selectedYear);
+    return courses.find(
+      c => c.name === selectedCourseName && c.academic_year === yearNum && c.term === selectedPeriod
+    );
+  }, [courses, selectedCourseName, selectedYear, selectedPeriod]);
 
-  // 講義回のリストを生成（通常回と特別回の両方を含む）
+  // 講義回のリストを生成（API型のsession文字列から）
   const sessionOptions = useMemo(() => {
     if (!selectedCourse?.sessions) return [];
-    const options: { value: string; label: string; isSpecial: boolean }[] = [];
 
-    // 通常回を追加
-    const normalSessions = selectedCourse.sessions
-      .filter(s => !s.isSpecialSession)
-      .map(s => s.sessionNumber)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort((a, b) => a - b);
-    normalSessions.forEach(n => {
-      options.push({ value: `normal-${n}`, label: `第${n}回`, isSpecial: false });
-    });
+    // ユニークなsession文字列を取得
+    const uniqueSessions = Array.from(new Set(selectedCourse.sessions.map(s => s.session)));
 
-    // 特別回を追加
-    const hasSpecialSession = selectedCourse.sessions.some(s => s.isSpecialSession);
-    if (hasSpecialSession) {
-      options.push({ value: 'special', label: '特別回', isSpecial: true });
-    }
-
-    return options;
+    return uniqueSessions.map(session => ({
+      value: session,
+      label: session,
+      isSpecial: session === '特別回'
+    }));
   }, [selectedCourse]);
-
-  // 選択された講義回が特別回かどうか
-  const isSpecialSession = selectedSession === 'special';
 
   // 選択された講義回に対応する講義日リストを取得
   const availableLectureDates = useMemo(() => {
     if (!selectedCourse?.sessions || !selectedSession) return [];
 
-    if (isSpecialSession) {
-      // 特別回の場合
-      return selectedCourse.sessions
-        .filter(s => s.isSpecialSession)
-        .map(s => s.lectureDate);
-    } else {
-      // 通常回の場合
-      const sessionNum = parseInt(selectedSession.replace('normal-', ''));
-      return selectedCourse.sessions
-        .filter(s => !s.isSpecialSession && s.sessionNumber === sessionNum)
-        .map(s => s.lectureDate);
-    }
-  }, [selectedCourse, selectedSession, isSpecialSession]);
+    // 選択されたsessionに一致する講義日を取得
+    return selectedCourse.sessions
+      .filter(s => s.session === selectedSession)
+      .map(s => s.lecture_date);
+  }, [selectedCourse, selectedSession]);
 
-  // 選択された講義日に対応する分析タイプリストを取得
+  // 選択された講義日に対応する分析タイプリストを取得（日本語表示）
   const availableAnalysisTypes = useMemo(() => {
     if (!selectedCourse?.sessions || !selectedLectureDate || !selectedSession) return [];
 
-    const sessionNum = isSpecialSession ? 0 : parseInt(selectedSession.replace('normal-', ''));
     const session = selectedCourse.sessions.find(s =>
-      s.lectureDate === selectedLectureDate &&
-      s.isSpecialSession === isSpecialSession &&
-      (isSpecialSession || s.sessionNumber === sessionNum)
+      s.lecture_date === selectedLectureDate &&
+      s.session === selectedSession
     );
 
-    return session?.analysisTypes || [];
-  }, [selectedCourse, selectedLectureDate, isSpecialSession, selectedSession]);
+    // API型（'preliminary', 'confirmed'）から日本語表示（'速報版', '確定版'）に変換
+    return (session?.analysis_types || []).map(type => AnalysisTypeLabels[type]);
+  }, [selectedCourse, selectedLectureDate, selectedSession]);
 
   // 選択された講義回の表示ラベルを取得
   const selectedSessionLabel = useMemo(() => {
@@ -112,7 +96,7 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
 
   const handleConfirmDelete = () => {
     if (selectedCourse) {
-      onDelete(selectedCourse.id);
+      onDelete(getCourseKey(selectedCourse));
       toast.success('データを削除しました', {
         description: `「${selectedCourse.name}」${selectedSessionLabel} ${selectedLectureDate} ${selectedAnalysisType}のデータを削除しました。`,
       });
@@ -276,7 +260,7 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                         <Calendar className="h-4 w-4" />
                         <span>年度・期間</span>
                       </div>
-                      <span className="font-medium">{selectedCourse.year} {selectedCourse.period}</span>
+                      <span className="font-medium">{formatAcademicYear(selectedCourse.academic_year)} {selectedCourse.term}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
