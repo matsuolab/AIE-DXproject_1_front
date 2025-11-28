@@ -8,8 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Textarea } from './ui/textarea';
-import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import { detectPrivacyColumns, type PrivacyColumnDetectionResult } from '../lib/pii-detector';
 
 interface DataUploadProps {
   onComplete: () => void;
@@ -51,6 +52,8 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'complete'>('idle');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [privacyDetectionResult, setPrivacyDetectionResult] = useState<PrivacyColumnDetectionResult | null>(null);
+  const [isCheckingPrivacy, setIsCheckingPrivacy] = useState(false);
   // 重複検出は派生状態なので useMemo で算出し、不要な再レンダーを防ぐ
   // 既存講座選択時に派生させる講座情報（stateに二重保持しない）
   const selectedCourse = useMemo(() => {
@@ -118,10 +121,10 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
     }
   };
 
-  const validateAndSetFile = (selectedFile: File) => {
+  const validateAndSetFile = async (selectedFile: File) => {
     const validExtensions = ['.xlsx', '.xls', '.csv'];
     const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
-    
+
     if (!validExtensions.includes(fileExtension)) {
       toast.error('ファイル形式エラー', {
         description: 'Excel形式（.xlsx, .xls）またはCSV形式のファイルを選択してください。',
@@ -130,13 +133,36 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
     }
 
     setFile(selectedFile);
-    toast.success('ファイルを選択しました', {
-      description: selectedFile.name,
-    });
+    setPrivacyDetectionResult(null);
+
+    // 個人情報列の検出を実行
+    setIsCheckingPrivacy(true);
+    try {
+      const result = await detectPrivacyColumns(selectedFile);
+      setPrivacyDetectionResult(result);
+
+      if (result.hasPrivacyColumns) {
+        toast.warning('個人情報の可能性がある列を検出しました', {
+          description: '詳細を確認してください。',
+          duration: 5000,
+        });
+      } else {
+        toast.success('ファイルを選択しました', {
+          description: selectedFile.name,
+        });
+      }
+    } catch (error) {
+      toast.error('ファイルの解析に失敗しました', {
+        description: error instanceof Error ? error.message : '不明なエラー',
+      });
+    } finally {
+      setIsCheckingPrivacy(false);
+    }
   };
 
   const handleRemoveFile = () => {
     setFile(null);
+    setPrivacyDetectionResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -158,6 +184,15 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   // 既存講座選択時は派生値を使用するため effect での setState は不要
 
   const handleStartAnalysis = async () => {
+    // 個人情報列が検出されている場合はアップロードをブロック
+    if (privacyDetectionResult?.hasPrivacyColumns) {
+      toast.error('個人情報列を含むファイルはアップロードできません', {
+        description: '該当列を削除してから再度お試しください。',
+        duration: 5000,
+      });
+      return;
+    }
+
     // バリデーション - 未入力項目を収集
     const errors: Record<string, string> = {};
 
@@ -310,24 +345,57 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                 )}
               </div>
             ) : (
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileSpreadsheet className="h-10 w-10 text-green-600" />
-                    <div>
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileSpreadsheet className="h-10 w-10 text-green-600" />
+                      <div>
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                      </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveFile}
+                      disabled={isUploading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRemoveFile}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
+
+                {/* 個人情報検出中のローディング表示 */}
+                {isCheckingPrivacy && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>個人情報列をチェック中...</span>
+                  </div>
+                )}
+
+                {/* 個人情報検出アラート */}
+                {privacyDetectionResult?.hasPrivacyColumns && (
+                  <Alert variant="destructive" className="border-orange-500 bg-orange-50">
+                    <ShieldAlert className="h-4 w-4 text-orange-600" />
+                    <AlertTitle className="text-orange-800">個人情報列を検出しました</AlertTitle>
+                    <AlertDescription className="text-orange-700">
+                      <p className="mb-2">
+                        以下の列が含まれています。アップロード前に該当列を削除してください。
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {privacyDetectionResult.detectedColumns.map((col, index) => (
+                          <li key={index}>
+                            「{col.columnName}」列
+                            {privacyDetectionResult.detectedColumns.some(c => c.sheetName !== 'Sheet1') && (
+                              <span className="text-gray-500">（{col.sheetName}シート）</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </CardContent>
