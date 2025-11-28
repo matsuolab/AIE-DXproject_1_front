@@ -7,10 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependency directories
 node_modules
+
+# Build output
 dist
 dist-ssr
+build
 *.local
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +32,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude files
+.claude
+docs
+CLAUDE.md
