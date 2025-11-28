@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
-import { Trash2, AlertTriangle, BarChart3, Calendar } from 'lucide-react';
+import { Trash2, AlertTriangle, BarChart3, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAcademicYear, parseAcademicYear, getCourseKey } from '../lib/course-utils';
-import type { CourseItem } from '../types/api';
+import { searchBatches, deleteBatch, ApiError } from '../api/client';
+import type { CourseItem, BatchSearchItem, AnalysisType } from '../types/api';
 import { AnalysisTypeLabels } from '../types/api';
 
 interface DataDeleteProps {
@@ -25,6 +26,14 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
   const [selectedLectureDate, setSelectedLectureDate] = useState('');
   const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // バッチ検索結果
+  const [batches, setBatches] = useState<BatchSearchItem[]>([]);
+  const [isLoadingBatches, setIsLoadingBatches] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
+
+  // 削除処理中
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ユニークな値を取得
   const uniqueCourseNames = Array.from(new Set(courses.map(c => c.name)));
@@ -43,42 +52,97 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
     );
   }, [courses, selectedCourseName, selectedYear, selectedPeriod]);
 
-  // 講義回のリストを生成（API型のsession文字列から）
+  // バッチ検索API呼び出し
+  const loadBatches = useCallback(async () => {
+    if (!selectedCourseName || !selectedYear || !selectedPeriod) {
+      setBatches([]);
+      return;
+    }
+
+    setIsLoadingBatches(true);
+    setBatchError(null);
+    try {
+      const yearNum = parseAcademicYear(selectedYear);
+      const response = await searchBatches({
+        course_name: selectedCourseName,
+        academic_year: yearNum,
+        term: selectedPeriod,
+      });
+      setBatches(response.batches);
+    } catch (err) {
+      console.error('Failed to search batches:', err);
+      if (err instanceof ApiError) {
+        setBatchError(err.message);
+      } else {
+        setBatchError('バッチ情報の取得に失敗しました');
+      }
+      setBatches([]);
+    } finally {
+      setIsLoadingBatches(false);
+    }
+  }, [selectedCourseName, selectedYear, selectedPeriod]);
+
+  // 講座選択が変わったらバッチを検索
+  useEffect(() => {
+    loadBatches();
+  }, [loadBatches]);
+
+  // 講義回のリストを生成（バッチ情報から）
   const sessionOptions = useMemo(() => {
-    if (!selectedCourse?.sessions) return [];
+    if (batches.length === 0) return [];
 
     // ユニークなsession文字列を取得
-    const uniqueSessions = Array.from(new Set(selectedCourse.sessions.map(s => s.session)));
+    const uniqueSessions = Array.from(new Set(batches.map(b => b.session)));
 
     return uniqueSessions.map(session => ({
       value: session,
       label: session,
       isSpecial: session === '特別回'
     }));
-  }, [selectedCourse]);
+  }, [batches]);
 
   // 選択された講義回に対応する講義日リストを取得
   const availableLectureDates = useMemo(() => {
-    if (!selectedCourse?.sessions || !selectedSession) return [];
+    if (batches.length === 0 || !selectedSession) return [];
 
     // 選択されたsessionに一致する講義日を取得
-    return selectedCourse.sessions
-      .filter(s => s.session === selectedSession)
-      .map(s => s.lecture_date);
-  }, [selectedCourse, selectedSession]);
+    const dates = batches
+      .filter(b => b.session === selectedSession)
+      .map(b => b.lecture_date);
 
-  // 選択された講義日に対応する分析タイプリストを取得（日本語表示）
+    return Array.from(new Set(dates));
+  }, [batches, selectedSession]);
+
+  // 選択された講義日に対応する分析タイプリストを取得
   const availableAnalysisTypes = useMemo(() => {
-    if (!selectedCourse?.sessions || !selectedLectureDate || !selectedSession) return [];
+    if (batches.length === 0 || !selectedLectureDate || !selectedSession) return [];
 
-    const session = selectedCourse.sessions.find(s =>
-      s.lecture_date === selectedLectureDate &&
-      s.session === selectedSession
+    const matchingBatches = batches.filter(b =>
+      b.session === selectedSession &&
+      b.lecture_date === selectedLectureDate
     );
 
-    // API型（'preliminary', 'confirmed'）から日本語表示（'速報版', '確定版'）に変換
-    return (session?.analysis_types || []).map(type => AnalysisTypeLabels[type]);
-  }, [selectedCourse, selectedLectureDate, selectedSession]);
+    // API型（'preliminary', 'confirmed'）から日本語表示に変換
+    return matchingBatches.map(b => ({
+      apiType: b.batch_type,
+      label: AnalysisTypeLabels[b.batch_type],
+      batchId: b.batch_id,
+    }));
+  }, [batches, selectedSession, selectedLectureDate]);
+
+  // 選択された分析タイプに対応するバッチを取得
+  const selectedBatch = useMemo(() => {
+    if (!selectedAnalysisType) return undefined;
+
+    // 日本語ラベルからAPIタイプに変換
+    const apiType: AnalysisType = selectedAnalysisType === '速報版' ? 'preliminary' : 'confirmed';
+
+    return batches.find(b =>
+      b.session === selectedSession &&
+      b.lecture_date === selectedLectureDate &&
+      b.batch_type === apiType
+    );
+  }, [batches, selectedSession, selectedLectureDate, selectedAnalysisType]);
 
   // 選択された講義回の表示ラベルを取得
   const selectedSessionLabel = useMemo(() => {
@@ -91,17 +155,52 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
       toast.error('削除するデータをすべて選択してください');
       return;
     }
+    if (!selectedBatch) {
+      toast.error('削除対象のバッチが見つかりません');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedCourse) {
-      onDelete(getCourseKey(selectedCourse));
+  const handleConfirmDelete = async () => {
+    if (!selectedBatch || !selectedCourse) {
+      setShowConfirmDialog(false);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteBatch(selectedBatch.batch_id);
+
       toast.success('データを削除しました', {
         description: `「${selectedCourse.name}」${selectedSessionLabel} ${selectedLectureDate} ${selectedAnalysisType}のデータを削除しました。`,
       });
+
+      // 親コンポーネントに削除を通知
+      onDelete(getCourseKey(selectedCourse));
+
+      // 選択をリセット
+      setSelectedSession('');
+      setSelectedLectureDate('');
+      setSelectedAnalysisType('');
+
+      // バッチリストを再取得
+      await loadBatches();
+    } catch (err) {
+      console.error('Failed to delete batch:', err);
+      if (err instanceof ApiError) {
+        toast.error('削除に失敗しました', {
+          description: err.message,
+        });
+      } else {
+        toast.error('削除に失敗しました', {
+          description: '予期せぬエラーが発生しました。',
+        });
+      }
+    } finally {
+      setIsDeleting(false);
+      setShowConfirmDialog(false);
     }
-    setShowConfirmDialog(false);
   };
 
   return (
@@ -126,6 +225,9 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                 setSelectedCourseName(value);
                 setSelectedYear('');
                 setSelectedPeriod('');
+                setSelectedSession('');
+                setSelectedLectureDate('');
+                setSelectedAnalysisType('');
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="講座名を選択してください" />
@@ -145,6 +247,9 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
               <Select value={selectedYear} onValueChange={(value) => {
                 setSelectedYear(value);
                 setSelectedPeriod('');
+                setSelectedSession('');
+                setSelectedLectureDate('');
+                setSelectedAnalysisType('');
               }} disabled={!selectedCourseName}>
                 <SelectTrigger>
                   <SelectValue placeholder="年度を選択してください" />
@@ -180,6 +285,22 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
               </Select>
             </div>
 
+            {/* バッチ検索中のローディング */}
+            {isLoadingBatches && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>削除可能なデータを検索中...</span>
+              </div>
+            )}
+
+            {/* バッチ検索エラー */}
+            {batchError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{batchError}</AlertDescription>
+              </Alert>
+            )}
+
             {/* 講義回を選択 */}
             <div className="space-y-2">
               <Label>講義回を選択 *</Label>
@@ -187,7 +308,7 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                 setSelectedSession(value);
                 setSelectedLectureDate('');
                 setSelectedAnalysisType('');
-              }} disabled={!selectedPeriod || sessionOptions.length === 0}>
+              }} disabled={!selectedPeriod || sessionOptions.length === 0 || isLoadingBatches}>
                 <SelectTrigger>
                   <SelectValue placeholder="講義回を選択してください" />
                 </SelectTrigger>
@@ -199,6 +320,11 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {selectedPeriod && !isLoadingBatches && sessionOptions.length === 0 && (
+                <p className="text-sm text-amber-600">
+                  削除可能なデータがありません
+                </p>
+              )}
             </div>
 
             {/* 講義日を選択 */}
@@ -238,15 +364,15 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {availableAnalysisTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                    <SelectItem key={type.batchId} value={type.label}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {selectedCourse && selectedSession && selectedLectureDate && selectedAnalysisType && (
+            {selectedCourse && selectedSession && selectedLectureDate && selectedAnalysisType && selectedBatch && (
               <Card className="bg-gray-50 border-gray-200">
                 <CardContent className="pt-6">
                   <h3 className="mb-4">選択中のデータ情報</h3>
@@ -280,6 +406,10 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
                       <span className="text-sm text-gray-600">分析タイプ</span>
                       <span className="font-medium">{selectedAnalysisType}</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">バッチID</span>
+                      <span className="font-mono text-sm">{selectedBatch.batch_id}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -305,10 +435,14 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
           <Button
             variant="destructive"
             onClick={handleDeleteClick}
-            disabled={!selectedCourseName || !selectedYear || !selectedPeriod || !selectedSession || !selectedLectureDate || !selectedAnalysisType}
+            disabled={!selectedCourseName || !selectedYear || !selectedPeriod || !selectedSession || !selectedLectureDate || !selectedAnalysisType || !selectedBatch || isDeleting}
             size="icon"
           >
-            <Trash2 className="h-4 w-4" />
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -321,15 +455,28 @@ export function DataDelete({ courses, onComplete, onDelete }: DataDeleteProps) {
             <AlertDialogDescription>
               「{selectedCourse?.name}」{selectedSessionLabel} {selectedLectureDate} {selectedAnalysisType}のデータを削除します。
               この操作は取り消すことができません。
+              {selectedBatch && (
+                <span className="block mt-2 text-sm">
+                  削除対象: バッチID {selectedBatch.batch_id}
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              削除する
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                '削除する'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
