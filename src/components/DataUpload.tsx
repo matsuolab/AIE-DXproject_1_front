@@ -12,7 +12,8 @@ import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTri
 import { toast } from 'sonner';
 import { detectPrivacyColumns, type PrivacyColumnDetectionResult } from '../lib/pii-detector';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
-import type { CourseItem } from '../types/api';
+import { uploadSurveyData, ApiError } from '../api/client';
+import type { CourseItem, AnalysisType } from '../types/api';
 
 interface DataUploadProps {
   onComplete: () => void;
@@ -245,20 +246,38 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
     setUploadStatus('uploading');
 
     try {
-      // ファイルアップロード処理のシミュレーション
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // APIパラメータの準備
+      const apiAnalysisType: AnalysisType = analysisType === '速報版' ? 'preliminary' : 'confirmed';
+      const yearNum = parseAcademicYear(effectiveYear);
+      const sessionStr = isSpecialSession ? '特別回' : `第${sessionNumber}回`;
+
+      // API呼び出し
+      const response = await uploadSurveyData({
+        file: file!,
+        course_name: effectiveCourseName,
+        academic_year: yearNum,
+        term: effectivePeriod,
+        session: sessionStr,
+        lecture_date: lectureDate,
+        instructor_name: instructorName,
+        description: lectureContent || undefined,
+        batch_type: apiAnalysisType,
+        zoom_participants: analysisType === '速報版' ? parseInt(zoomParticipants) : undefined,
+        recording_views: analysisType === '確定版' ? parseInt(recordingViews) : undefined,
+      });
+
       setUploadStatus('analyzing');
       toast.info('データ分析を開始しました', {
         description: 'バックエンドで分析処理を実行しています...',
       });
 
-      // 分析処理のシミュレーション
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // バックエンドの処理状況をポーリング（将来的には実装）
+      // 現在は成功レスポンスを受け取ったら完了として扱う
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       setUploadStatus('complete');
-      toast.success('分析が完了しました！', {
-        description: `講座「${effectiveCourseName}」の${analysisType}データが登録されました。`,
+      toast.success('アップロードが完了しました！', {
+        description: `講座「${effectiveCourseName}」の${analysisType}データが登録されました。（バッチID: ${response.batch_id}）`,
       });
 
       // 完了後、少し待ってから講座一覧に戻る
@@ -266,10 +285,38 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
         onComplete();
       }, 1500);
 
-    } catch {
-      toast.error('エラーが発生しました', {
-        description: 'データのアップロードに失敗しました。もう一度お試しください。',
-      });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === 'CONFLICT') {
+          // 重複データエラー
+          toast.error('データが重複しています', {
+            description: err.message,
+            duration: 8000,
+          });
+        } else if (err.code === 'VALIDATION_ERROR') {
+          // バリデーションエラー
+          toast.error('入力内容にエラーがあります', {
+            description: err.message,
+            duration: 5000,
+          });
+          // 詳細エラーがあれば表示
+          if (err.details) {
+            const newErrors: Record<string, string> = {};
+            Object.entries(err.details).forEach(([field, message]) => {
+              newErrors[field] = message;
+            });
+            setValidationErrors(newErrors);
+          }
+        } else {
+          toast.error('エラーが発生しました', {
+            description: err.message,
+          });
+        }
+      } else {
+        toast.error('エラーが発生しました', {
+          description: 'データのアップロードに失敗しました。もう一度お試しください。',
+        });
+      }
       setUploadStatus('idle');
       setIsUploading(false);
     }
