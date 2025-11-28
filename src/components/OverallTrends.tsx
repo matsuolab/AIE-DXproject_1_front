@@ -1,139 +1,68 @@
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar, User, BookOpen } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
-import { useState } from 'react';
+import { Button } from './ui/button';
+import { fetchOverallTrends, ApiError } from '../api/client';
+import type {
+  OverallTrendsResponse,
+  AnalysisType,
+  StudentAttribute,
+  ScoreItem,
+} from '../types/api';
+import {
+  AnalysisTypeFromLabel,
+  StudentAttributeFromLabel,
+  SentimentLabels as SentimentLabelMap,
+  CommentCategoryLabels as CategoryLabelMap,
+} from '../types/api';
 
-export type AnalysisType = '速報版' | '確定版';
-export type StudentAttribute = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
+export type AnalysisTypeLabel = '速報版' | '確定版';
+export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
 
 interface OverallTrendsProps {
   courseName: string;
-  analysisType: AnalysisType;
-  studentAttribute: StudentAttribute;
+  courseYear: number;
+  coursePeriod: string;
+  analysisType: AnalysisTypeLabel;
+  studentAttribute: StudentAttributeLabel;
 }
-
-// 講義回ごとの情報（講義日、講師名、講義内容）
-const sessionInfoData = [
-  { session: '第1回', lectureDate: '2024-10-07', instructorName: '山田 太郎', lectureContent: 'イントロダクション：大規模言語モデルの概要と歴史' },
-  { session: '第2回', lectureDate: '2024-10-14', instructorName: '山田 太郎', lectureContent: 'Transformerアーキテクチャの基礎' },
-  { session: '第3回', lectureDate: '2024-10-21', instructorName: '鈴木 花子', lectureContent: '事前学習とファインチューニング' },
-  { session: '第4回', lectureDate: '2024-10-28', instructorName: '鈴木 花子', lectureContent: 'プロンプトエンジニアリング' },
-  { session: '特別回', lectureDate: '2024-11-04', instructorName: '田中 健一', lectureContent: '特別講演：企業におけるLLM活用事例' },
-  { session: '第5回', lectureDate: '2024-11-11', instructorName: '佐藤 一郎', lectureContent: 'RAGと外部知識の活用' },
-  { session: '第6回', lectureDate: '2024-11-18', instructorName: '山田 太郎', lectureContent: 'LLMの応用事例と今後の展望' },
-];
-
-// モックデータ - NPS推移（速報版と確定版）
-const npsTrendData = {
-  '速報版': [
-    { session: '第1回', nps: 12.5 },
-    { session: '第2回', nps: 20.0 },
-    { session: '第3回', nps: 16.0 },
-    { session: '第4回', nps: 25.2 },
-    { session: '特別回', nps: 38.5 },
-    { session: '第5回', nps: 28.5 },
-    { session: '第6回', nps: 32.1 },
-  ],
-  '確定版': [
-    { session: '第1回', nps: 15.5 },
-    { session: '第2回', nps: 22.3 },
-    { session: '第3回', nps: 18.7 },
-    { session: '第4回', nps: 28.4 },
-    { session: '特別回', nps: 42.0 },
-    { session: '第5回', nps: 31.2 },
-    { session: '第6回', nps: 35.8 },
-  ],
-};
-
-// 回答数と離脱率の推移データ（速報版と確定版）
-interface ResponseRetentionEntry {
-  session: string;
-  responses: number;
-  retentionRate: number;
-  student: number;
-  corporate: number;
-  invited: number;
-  unknown: number;
-}
-
-const responseRetentionData: Record<AnalysisType, ResponseRetentionEntry[]> = {
-  '速報版': [
-    { session: '第1回', responses: 350, retentionRate: 100, student: 140, corporate: 155, invited: 40, unknown: 15 },
-    { session: '第2回', responses: 338, retentionRate: 96.6, student: 136, corporate: 150, invited: 38, unknown: 14 },
-    { session: '第3回', responses: 325, retentionRate: 92.9, student: 130, corporate: 145, invited: 36, unknown: 14 },
-    { session: '第4回', responses: 315, retentionRate: 90.0, student: 126, corporate: 141, invited: 35, unknown: 13 },
-    { session: '特別回', responses: 280, retentionRate: 80.0, student: 112, corporate: 125, invited: 30, unknown: 13 },
-    { session: '第5回', responses: 308, retentionRate: 88.0, student: 123, corporate: 137, invited: 34, unknown: 14 },
-    { session: '第6回', responses: 302, retentionRate: 86.3, student: 121, corporate: 134, invited: 33, unknown: 14 },
-  ],
-  '確定版': [
-    { session: '第1回', responses: 450, retentionRate: 100, student: 180, corporate: 200, invited: 50, unknown: 20 },
-    { session: '第2回', responses: 432, retentionRate: 96.0, student: 175, corporate: 190, invited: 48, unknown: 19 },
-    { session: '第3回', responses: 418, retentionRate: 92.9, student: 168, corporate: 185, invited: 47, unknown: 18 },
-    { session: '第4回', responses: 405, retentionRate: 90.0, student: 162, corporate: 180, invited: 45, unknown: 18 },
-    { session: '特別回', responses: 365, retentionRate: 81.1, student: 146, corporate: 162, invited: 40, unknown: 17 },
-    { session: '第5回', responses: 395, retentionRate: 87.8, student: 158, corporate: 175, invited: 44, unknown: 18 },
-    { session: '第6回', responses: 388, retentionRate: 86.2, student: 155, corporate: 172, invited: 43, unknown: 18 },
-  ],
-};
-
-// 詳細な評価項目別推移データ（速報版と確定版）
-const detailedTrendData = {
-  '速報版': [
-    { session: '第1回', 総合満足度: 4.0, 学習量: 3.9, 理解度: 3.8, 運営: 4.1, 講師満足度: 4.3, 時間使い方: 4.2, 質問対応: 4.4, 話し方: 4.3, 予習: 3.5, 意欲: 3.7, 今後活用: 3.6 },
-    { session: '第2回', 総合満足度: 4.1, 学習量: 4.0, 理解度: 3.9, 運営: 4.2, 講師満足度: 4.4, 時間使い方: 4.3, 質問対応: 4.5, 話し方: 4.4, 予習: 3.7, 意欲: 3.9, 今後活用: 3.8 },
-    { session: '第3回', 総合満足度: 3.9, 学習量: 3.8, 理解度: 3.7, 運営: 4.0, 講師満足度: 4.2, 時間使い方: 4.1, 質問対応: 4.3, 話し方: 4.2, 予習: 3.6, 意欲: 3.8, 今後活用: 3.7 },
-    { session: '第4回', 総合満足度: 4.2, 学習量: 4.1, 理解度: 4.0, 運営: 4.3, 講師満足度: 4.5, 時間使い方: 4.4, 質問対応: 4.6, 話し方: 4.5, 予習: 3.8, 意欲: 4.0, 今後活用: 3.9 },
-    { session: '特別回', 総合満足度: 4.6, 学習量: 4.4, 理解度: 4.3, 運営: 4.5, 講師満足度: 4.8, 時間使い方: 4.7, 質問対応: 4.8, 話し方: 4.7, 予習: 3.5, 意欲: 4.4, 今後活用: 4.5 },
-    { session: '第5回', 総合満足度: 4.3, 学習量: 4.2, 理解度: 4.1, 運営: 4.4, 講師満足度: 4.6, 時間使い方: 4.5, 質問対応: 4.7, 話し方: 4.6, 予習: 3.9, 意欲: 4.1, 今後活用: 4.0 },
-    { session: '第6回', 総合満足度: 4.4, 学習量: 4.3, 理解度: 4.2, 運営: 4.5, 講師満足度: 4.5, 時間使い方: 4.4, 質問対応: 4.6, 話し方: 4.5, 予習: 4.0, 意欲: 4.2, 今後活用: 4.1 },
-  ],
-  '確定版': [
-    { session: '第1回', 総合満足度: 4.2, 学習量: 4.1, 理解度: 4.0, 運営: 4.3, 講師満足度: 4.5, 時間使い方: 4.4, 質問対応: 4.6, 話し方: 4.5, 予習: 3.7, 意欲: 3.9, 今後活用: 3.8 },
-    { session: '第2回', 総合満足度: 4.3, 学習量: 4.2, 理解度: 4.1, 運営: 4.4, 講師満足度: 4.6, 時間使い方: 4.5, 質問対応: 4.7, 話し方: 4.6, 予習: 3.9, 意欲: 4.1, 今後活用: 4.0 },
-    { session: '第3回', 総合満足度: 4.1, 学習量: 4.0, 理解度: 3.9, 運営: 4.2, 講師満足度: 4.4, 時間使い方: 4.3, 質問対応: 4.5, 話し方: 4.4, 予習: 3.8, 意欲: 4.0, 今後活用: 3.9 },
-    { session: '第4回', 総合満足度: 4.4, 学習量: 4.3, 理解度: 4.2, 運営: 4.5, 講師満足度: 4.7, 時間使い方: 4.6, 質問対応: 4.8, 話し方: 4.7, 予習: 4.0, 意欲: 4.2, 今後活用: 4.1 },
-    { session: '特別回', 総合満足度: 4.7, 学習量: 4.5, 理解度: 4.4, 運営: 4.6, 講師満足度: 4.9, 時間使い方: 4.8, 質問対応: 4.9, 話し方: 4.8, 予習: 3.6, 意欲: 4.5, 今後活用: 4.6 },
-    { session: '第5回', 総合満足度: 4.5, 学習量: 4.4, 理解度: 4.3, 運営: 4.6, 講師満足度: 4.8, 時間使い方: 4.7, 質問対応: 4.9, 話し方: 4.8, 予習: 4.1, 意欲: 4.3, 今後活用: 4.2 },
-    { session: '第6回', 総合満足度: 4.6, 学習量: 4.5, 理解度: 4.4, 運営: 4.7, 講師満足度: 4.7, 時間使い方: 4.6, 質問対応: 4.8, 話し方: 4.7, 予習: 4.2, 意欲: 4.4, 今後活用: 4.3 },
-  ],
-};
 
 // 評価項目の設定（表示名とデータキー、色）- グループ分け
 const evaluationItemGroups = [
   {
     groupName: '総合満足度',
     items: [
-      { key: '総合満足度', label: '総合的な満足度', color: '#3b82f6' },
+      { key: 'overall_satisfaction', label: '総合的な満足度', color: '#3b82f6' },
     ]
   },
   {
     groupName: '講義内容',
     items: [
-      { key: '学習量', label: '講義内容の学習量', color: '#8b5cf6' },
-      { key: '理解度', label: '講義内容の理解度', color: '#ec4899' },
-      { key: '運営', label: '講義中の運営アナウンス', color: '#f59e0b' },
+      { key: 'learning_amount', label: '講義内容の学習量', color: '#8b5cf6' },
+      { key: 'comprehension', label: '講義内容の理解度', color: '#ec4899' },
+      { key: 'operations', label: '講義中の運営アナウンス', color: '#f59e0b' },
     ]
   },
   {
     groupName: '講師評価',
     items: [
-      { key: '講師満足度', label: '講師の総合的な満足度', color: '#10b981' },
-      { key: '時間使い方', label: '講師の授業時間の使い方', color: '#06b6d4' },
-      { key: '質問対応', label: '講師の質問対応', color: '#6366f1' },
-      { key: '話し方', label: '講師の話し方', color: '#f43f5e' },
+      { key: 'instructor_satisfaction', label: '講師の総合的な満足度', color: '#10b981' },
+      { key: 'time_management', label: '講師の授業時間の使い方', color: '#06b6d4' },
+      { key: 'question_handling', label: '講師の質問対応', color: '#6366f1' },
+      { key: 'speaking_style', label: '講師の話し方', color: '#f43f5e' },
     ]
   },
   {
     groupName: '受講生の自己評価',
     items: [
-      { key: '予習', label: '自身の予習', color: '#84cc16' },
-      { key: '意欲', label: '自身の意欲', color: '#a855f7' },
-      { key: '今後活用', label: '自身の今後への活用', color: '#0ea5e9' },
+      { key: 'preparation', label: '自身の予習', color: '#84cc16' },
+      { key: 'motivation', label: '自身の意欲', color: '#a855f7' },
+      { key: 'future_application', label: '自身の今後への活用', color: '#0ea5e9' },
     ]
   },
 ];
@@ -141,260 +70,143 @@ const evaluationItemGroups = [
 // フラットな評価項目リスト（グラフ描画用）
 const evaluationItems = evaluationItemGroups.flatMap(group => group.items);
 
-// 全体を通しての平均点（速報版と確定版）
-const overallAverages = {
-  '速報版': {
-    overall: {
-      label: '総合満足度',
-      items: [
-        { name: '本日の総合的な満足度', score: 4.15 }
-      ]
-    },
-    content: {
-      label: '講義内容',
-      items: [
-        { name: '講義内容の学習量', score: 4.08 },
-        { name: '講義内容の理解度', score: 3.95 },
-        { name: '講義中の運営アナウンス', score: 4.12 }
-      ]
-    },
-    instructor: {
-      label: '講師評価',
-      items: [
-        { name: '講師の総合的な満足度', score: 4.42 },
-        { name: '講師の授業時間の使い方', score: 4.38 },
-        { name: '講師の質問対応', score: 4.45 },
-        { name: '講師の話し方', score: 4.35 }
-      ]
-    },
-    selfEval: {
-      label: '受講生の自己評価',
-      items: [
-        { name: '自身の予習', score: 3.65 },
-        { name: '自身の意欲', score: 3.92 },
-        { name: '自身の今後への活用', score: 3.85 }
-      ]
-    }
-  },
-  '確定版': {
-    overall: {
-      label: '総合満足度',
-      items: [
-        { name: '本日の総合的な満足度', score: 4.35 }
-      ]
-    },
-    content: {
-      label: '講義内容',
-      items: [
-        { name: '講義内容の学習量', score: 4.28 },
-        { name: '講義内容の理解度', score: 4.15 },
-        { name: '講義中の運営アナウンス', score: 4.32 }
-      ]
-    },
-    instructor: {
-      label: '講師評価',
-      items: [
-        { name: '講師の総合的な満足度', score: 4.62 },
-        { name: '講師の授業時間の使い方', score: 4.58 },
-        { name: '講師の質問対応', score: 4.65 },
-        { name: '講師の話し方', score: 4.55 }
-      ]
-    },
-    selfEval: {
-      label: '受講生の自己評価',
-      items: [
-        { name: '自身の予習', score: 3.85 },
-        { name: '自身の意欲', score: 4.12 },
-        { name: '自身の今後への活用', score: 4.05 }
-      ]
-    }
-  }
-};
+export function OverallTrends({ courseName, courseYear, coursePeriod, analysisType, studentAttribute }: OverallTrendsProps) {
+  const [data, setData] = useState<OverallTrendsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const sentimentData = {
-  '速報版': [
-    { name: 'ポジティブ', value: 62, color: '#22c55e' },
-    { name: 'ニュートラル', value: 26, color: '#94a3b8' },
-    { name: 'ネガティブ', value: 12, color: '#ef4444' },
-  ],
-  '確定版': [
-    { name: 'ポジティブ', value: 65, color: '#22c55e' },
-    { name: 'ニュートラル', value: 25, color: '#94a3b8' },
-    { name: 'ネガティブ', value: 10, color: '#ef4444' },
-  ],
-};
-
-const categoryData = {
-  '速報版': [
-    { category: '講義内容', count: 98 },
-    { category: '講義資料', count: 52 },
-    { category: '運営', count: 38 },
-    { category: 'その他', count: 28 },
-  ],
-  '確定版': [
-    { category: '講義内容', count: 125 },
-    { category: '講義資料', count: 67 },
-    { category: '運営', count: 45 },
-    { category: 'その他', count: 35 },
-  ],
-};
-
-// Zoom参加者数の推移データ（速報版）
-const zoomParticipantsData = [
-  { session: '第1回', participants: 320 },
-  { session: '第2回', participants: 305 },
-  { session: '第3回', participants: 298 },
-  { session: '第4回', participants: 285 },
-  { session: '特別回', participants: 350 },
-  { session: '第5回', participants: 275 },
-  { session: '第6回', participants: 268 },
-];
-
-// 録画視聴回数の推移データ（確定版）
-const recordingViewsData = [
-  { session: '第1回', views: 520 },
-  { session: '第2回', views: 485 },
-  { session: '第3回', views: 510 },
-  { session: '第4回', views: 475 },
-  { session: '特別回', views: 580 },
-  { session: '第5回', views: 490 },
-  { session: '第6回', views: 465 },
-];
-
-// 属性別のデータ調整係数（全体を1.0として）
-const attributeFactors = {
-  '全体': { factor: 1.0, npsAdjust: 0 },
-  '学生': { factor: 0.4, npsAdjust: -3.2 },
-  '会員企業': { factor: 0.44, npsAdjust: 5.1 },
-  '招待枠': { factor: 0.11, npsAdjust: -1.5 },
-  '不明': { factor: 0.05, npsAdjust: -8.0 },
-};
-
-// 属性別にデータをフィルタリングする関数
-function getAttributeResponseCount(sessionData: ResponseRetentionEntry, attribute: StudentAttribute): number {
-  if (attribute === '全体') return sessionData.responses;
-  const attrMap: Record<Exclude<StudentAttribute, '全体'>, 'student' | 'corporate' | 'invited' | 'unknown'> = {
-    '学生': 'student',
-    '会員企業': 'corporate',
-    '招待枠': 'invited',
-    '不明': 'unknown'
-  };
-  const key = attrMap[attribute];
-  return sessionData[key] ?? 0;
-}
-
-// 属性別にNPSを調整する関数
-function adjustNPSForAttribute(baseNPS: number, attribute: StudentAttribute): number {
-  return baseNPS + attributeFactors[attribute].npsAdjust;
-}
-
-// 属性別にスコアを調整する関数（微調整）
-function adjustScoreForAttribute(baseScore: number, attribute: StudentAttribute): number {
-  const adjustments: { [key: string]: number } = {
-    '全体': 0,
-    '学生': -0.15,
-    '会員企業': 0.12,
-    '招待枠': -0.08,
-    '不明': -0.25
-  };
-  return Math.max(1, Math.min(5, baseScore + adjustments[attribute]));
-}
-
-export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsProps) {
   // チェックボックスで選択された項目を管理
-  const [selectedItems, setSelectedItems] = useState<string[]>(['総合満足度', '講師満足度']);
+  const [selectedItems, setSelectedItems] = useState<string[]>(['overall_satisfaction', 'instructor_satisfaction']);
+
+  // API呼び出し
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const batchType: AnalysisType = AnalysisTypeFromLabel[analysisType];
+      const studentAttr: StudentAttribute = StudentAttributeFromLabel[studentAttribute] || 'all';
+
+      const response = await fetchOverallTrends({
+        name: courseName,
+        academic_year: courseYear,
+        term: coursePeriod,
+        batch_type: batchType,
+        student_attribute: studentAttr,
+      });
+      setData(response);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('データの取得に失敗しました');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [courseName, courseYear, coursePeriod, analysisType, studentAttribute]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // チェックボックスの切り替え
   const toggleItem = (itemKey: string) => {
-    setSelectedItems(prev => 
+    setSelectedItems(prev =>
       prev.includes(itemKey)
         ? prev.filter(k => k !== itemKey)
         : [...prev, itemKey]
     );
   };
 
-  // 分析タイプに応じたデータを選択
-  const baseNPSTrend = npsTrendData[analysisType];
-  const baseResponseRetention = responseRetentionData[analysisType];
-  const baseDetailedTrend = detailedTrendData[analysisType];
-  const baseOverallAverages = overallAverages[analysisType];
-  const baseSentiment = sentimentData[analysisType];
-  const baseCategory = categoryData[analysisType];
+  // ローディング表示
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+        <p className="text-gray-600">データを読み込み中...</p>
+      </div>
+    );
+  }
 
-  // 属性に応じてデータを調整
-  const currentNPSTrend = baseNPSTrend.map(item => ({
-    ...item,
-    nps: adjustNPSForAttribute(item.nps, studentAttribute)
-  }));
+  // エラー表示
+  if (error || !data) {
+    return (
+      <Card className="max-w-md mx-auto">
+        <CardContent className="py-8">
+          <div className="flex flex-col items-center text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h2 className="text-lg font-semibold mb-2">エラーが発生しました</h2>
+            <p className="text-gray-600 mb-6">{error || 'データを取得できませんでした'}</p>
+            <Button onClick={loadData} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              再読み込み
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // 回答数と継続率を属性別に計算
-  const attributeResponseData = baseResponseRetention.map(item => ({
-    ...item,
-    responses: getAttributeResponseCount(item, studentAttribute)
-  }));
-  
-  // 第1回の回答数を基準に継続率を再計算
-  const firstSessionAttributeResponses = attributeResponseData[0]?.responses || 1;
-  const currentResponseRetention = attributeResponseData.map(item => ({
-    ...item,
-    retentionRate: (item.responses / firstSessionAttributeResponses) * 100
-  }));
+  // APIレスポンスからUIデータを生成
+  const {
+    lecture_info,
+    response_trends,
+    participation_trends,
+    nps_summary,
+    nps_trends,
+    score_trends,
+    overall_averages,
+    sentiment_summary,
+    category_summary,
+  } = data;
 
-  const currentOverallAverages = Object.fromEntries(
-    Object.entries(baseOverallAverages).map(([key, category]) => [
-      key,
-      {
-        ...category,
-        items: category.items.map(item => ({
-          ...item,
-          score: adjustScoreForAttribute(item.score, studentAttribute)
-        }))
-      }
-    ])
-  );
-
-  const currentSentiment = baseSentiment;
-  const currentCategory = baseCategory.map(item => ({
-    ...item,
-    count: Math.round(item.count * attributeFactors[studentAttribute].factor)
-  }));
-
-  // 1回目の回答数を取得（Y軸のスケール調整用）
-  const firstSessionResponses = currentResponseRetention[0]?.responses || 100;
-
-  // 全体のNPSスコアを計算（速報版と確定版、属性で異なる）
-  const baseNPS = analysisType === '速報版' ? 21.8 : 25.2;
-  const overallNPS = adjustNPSForAttribute(baseNPS, studentAttribute);
+  // NPS関連
+  const overallNPS = nps_summary.score;
   const npsColor = overallNPS >= 0 ? 'text-green-600' : 'text-red-600';
   const npsBgColor = overallNPS >= 0 ? 'bg-green-50' : 'bg-red-50';
   const npsBorderColor = overallNPS >= 0 ? 'border-green-200' : 'border-red-200';
 
-  // NPS内訳も分析タイプと属性に応じて変更
-  const baseBreakdown = analysisType === '速報版' 
-    ? { promoters: 42, neutrals: 36, detractors: 22 }
-    : { promoters: 45, neutrals: 35, detractors: 20 };
-  
-  const attributeBreakdownAdjust: { [key: string]: { promoters: number, neutrals: number, detractors: number } } = {
-    '全体': { promoters: 0, neutrals: 0, detractors: 0 },
-    '学生': { promoters: -5, neutrals: 2, detractors: 3 },
-    '会員企業': { promoters: 8, neutrals: -3, detractors: -5 },
-    '招待枠': { promoters: -3, neutrals: 1, detractors: 2 },
-    '不明': { promoters: -12, neutrals: 4, detractors: 8 },
-  };
-  
-  const npsBreakdown = {
-    promoters: Math.max(0, Math.min(100, baseBreakdown.promoters + attributeBreakdownAdjust[studentAttribute].promoters)),
-    neutrals: Math.max(0, Math.min(100, baseBreakdown.neutrals + attributeBreakdownAdjust[studentAttribute].neutrals)),
-    detractors: Math.max(0, Math.min(100, baseBreakdown.detractors + attributeBreakdownAdjust[studentAttribute].detractors))
-  };
+  // 回答数・継続率データを変換
+  const responseRetentionData = response_trends.map(item => ({
+    session: item.session,
+    responses: item.response_count,
+    retentionRate: item.retention_rate,
+  }));
 
-  // NPS回答者数を計算（全講義回の合計回答数を基に計算）
-  const totalResponses = currentResponseRetention.reduce((sum, item) => sum + item.responses, 0);
-  const npsRespondents = {
-    promoters: Math.round(totalResponses * npsBreakdown.promoters / 100),
-    neutrals: Math.round(totalResponses * npsBreakdown.neutrals / 100),
-    detractors: Math.round(totalResponses * npsBreakdown.detractors / 100)
-  };
+  // 第1回の回答数（Y軸スケール調整用）
+  const firstSessionResponses = responseRetentionData[0]?.responses || 100;
+
+  // NPS推移データを変換
+  const npsTrendData = nps_trends.map(item => ({
+    session: item.session,
+    nps: item.nps_score,
+  }));
+
+  // 評価項目推移データを変換
+  const detailedTrendData = score_trends.map(item => ({
+    session: item.session,
+    ...item.scores,
+  }));
+
+  // 感情分析データを変換
+  const sentimentData = sentiment_summary.map(item => ({
+    name: SentimentLabelMap[item.sentiment],
+    value: item.percentage,
+    color: item.sentiment === 'positive' ? '#22c55e' : item.sentiment === 'negative' ? '#ef4444' : '#94a3b8',
+  }));
+
+  // カテゴリ別コメント数を変換
+  const categoryData = category_summary.map(item => ({
+    category: CategoryLabelMap[item.category],
+    count: item.count,
+  }));
+
+  // Zoom参加者数/録画視聴回数データを変換
+  const participationData = participation_trends.map(item => ({
+    session: item.session,
+    participants: item.zoom_participants,
+    views: item.recording_views,
+  }));
 
   return (
     <div className="space-y-6">
@@ -428,12 +240,12 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sessionInfoData.map((info) => (
-                <TableRow key={info.session}>
+              {lecture_info.map((info) => (
+                <TableRow key={info.lecture_id}>
                   <TableCell className="font-medium">{info.session}</TableCell>
-                  <TableCell>{info.lectureDate}</TableCell>
-                  <TableCell>{info.instructorName}</TableCell>
-                  <TableCell>{info.lectureContent}</TableCell>
+                  <TableCell>{info.lecture_date}</TableCell>
+                  <TableCell>{info.instructor_name}</TableCell>
+                  <TableCell>{info.description || '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -449,7 +261,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={currentResponseRetention}>
+            <ComposedChart data={responseRetentionData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="session" />
               <YAxis yAxisId="left" domain={[0, firstSessionResponses]} />
@@ -485,7 +297,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
       </Card>
 
       {/* Zoom参加者数の推移（速報版）/ 録画視聴回数の推移（確定版） - 全体の時のみ表示 */}
-      {studentAttribute === '全体' && (
+      {studentAttribute === '全体' && participationData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>
@@ -499,7 +311,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analysisType === '速報版' ? zoomParticipantsData : recordingViewsData}>
+              <LineChart data={participationData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="session" />
                 <YAxis />
@@ -544,19 +356,19 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
             <div className="mt-6 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm">推奨者（9-10点）</span>
-                <span className="text-sm">{npsRespondents.promoters}人（{npsBreakdown.promoters}%）</span>
+                <span className="text-sm">{nps_summary.promoters_count}人（{nps_summary.promoters_percentage}%）</span>
               </div>
-              <Progress value={npsBreakdown.promoters} className="h-2" />
+              <Progress value={nps_summary.promoters_percentage} className="h-2" />
               <div className="flex justify-between items-center">
                 <span className="text-sm">中立者（7-8点）</span>
-                <span className="text-sm">{npsRespondents.neutrals}人（{npsBreakdown.neutrals}%）</span>
+                <span className="text-sm">{nps_summary.neutrals_count}人（{nps_summary.neutrals_percentage}%）</span>
               </div>
-              <Progress value={npsBreakdown.neutrals} className="h-2" />
+              <Progress value={nps_summary.neutrals_percentage} className="h-2" />
               <div className="flex justify-between items-center">
                 <span className="text-sm">批判者（0-6点）</span>
-                <span className="text-sm">{npsRespondents.detractors}人（{npsBreakdown.detractors}%）</span>
+                <span className="text-sm">{nps_summary.detractors_count}人（{nps_summary.detractors_percentage}%）</span>
               </div>
-              <Progress value={npsBreakdown.detractors} className="h-2" />
+              <Progress value={nps_summary.detractors_percentage} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -569,16 +381,16 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={currentNPSTrend}>
+              <LineChart data={npsTrendData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="session" />
                 <YAxis domain={[-100, 100]} />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="nps" 
-                  stroke="#3b82f6" 
+                <Line
+                  type="monotone"
+                  dataKey="nps"
+                  stroke="#3b82f6"
                   name="NPSスコア"
                   strokeWidth={2}
                 />
@@ -626,16 +438,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
 
           {selectedItems.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={baseDetailedTrend.map(item => ({
-                ...item,
-                ...Object.fromEntries(
-                  Object.entries(item).filter(([key]) => key === 'session' || selectedItems.includes(key))
-                    .map(([key, value]) => [
-                      key,
-                      key === 'session' ? value : adjustScoreForAttribute(value as number, studentAttribute)
-                    ])
-                )
-              }))}>
+              <LineChart data={detailedTrendData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="session" />
                 <YAxis domain={[0, 5]} />
@@ -671,11 +474,11 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(currentOverallAverages).map(([key, category]) => (
+            {Object.entries(overall_averages).map(([key, category]) => (
               <div key={key} className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">{category.label}</h3>
                 <div className="space-y-3">
-                  {category.items.map((item, index) => (
+                  {category.items.map((item: ScoreItem, index: number) => (
                     <div key={index}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm text-gray-600">{item.name}</span>
@@ -708,7 +511,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={currentSentiment}
+                  data={sentimentData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -717,7 +520,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
                   dataKey="value"
                   label={(entry) => `${entry.name}: ${entry.value}%`}
                 >
-                  {currentSentiment.map((entry, index) => (
+                  {sentimentData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -735,7 +538,7 @@ export function OverallTrends({ analysisType, studentAttribute }: OverallTrendsP
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={currentCategory} layout="vertical">
+              <BarChart data={categoryData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="category" type="category" width={100} />

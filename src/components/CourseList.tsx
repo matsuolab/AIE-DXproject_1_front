@@ -4,26 +4,23 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { BarChart3, Calendar, Plus, Trash2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import type { CourseItem } from '../types/api';
+import { getCourseKey, formatAcademicYear } from '../lib/course-utils';
 
-export interface SessionData {
-  sessionNumber: number;
-  isSpecialSession: boolean;
-  lectureDate: string;
-  analysisTypes: Array<'速報版' | '確定版'>;
-}
-
-export interface Course {
-  id: string;
-  name: string;
-  year: string;
-  period: string;
-  responseCount: number;
-  sessions?: SessionData[];
+// 速報版・確定版のカウントを取得
+function getAnalysisTypeCounts(course: CourseItem): { preliminary: number; confirmed: number } {
+  let preliminary = 0;
+  let confirmed = 0;
+  for (const session of course.sessions) {
+    if (session.analysis_types.includes('preliminary')) preliminary++;
+    if (session.analysis_types.includes('confirmed')) confirmed++;
+  }
+  return { preliminary, confirmed };
 }
 
 interface CourseListProps {
-  courses: Course[];
-  onSelectCourse: (courseId: string) => void;
+  courses: CourseItem[];
+  onSelectCourse: (course: CourseItem) => void;
   onAddData: () => void;
   onDeleteData: () => void;
 }
@@ -37,22 +34,23 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
   // フィルタリング処理
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesYear = yearFilter === 'all' || course.year === yearFilter;
-    const matchesPeriod = periodFilter === 'all' || course.period === periodFilter;
+    const yearStr = formatAcademicYear(course.academic_year);
+    const matchesYear = yearFilter === 'all' || yearStr === yearFilter;
+    const matchesPeriod = periodFilter === 'all' || course.term === periodFilter;
     return matchesSearch && matchesYear && matchesPeriod;
   });
 
   // ユニークな年度と期間を取得
-  const uniqueYears = Array.from(new Set(courses.map(c => c.year)));
-  const uniquePeriods = Array.from(new Set(courses.map(c => c.period)));
+  const uniqueYears = Array.from(new Set(courses.map(c => formatAcademicYear(c.academic_year))));
+  const uniquePeriods = Array.from(new Set(courses.map(c => c.term)));
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl mb-2">講座一覧</h1>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="lg"
             onClick={() => setIsFilterExpanded(!isFilterExpanded)}
           >
@@ -131,8 +129,8 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
                 <p className="text-sm text-gray-600">
                   {filteredCourses.length}件の講座が見つかりました
                 </p>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSearchQuery('');
@@ -157,35 +155,38 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>{course.name}</CardTitle>
-                <CardDescription>{course.year}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>{course.period}</span>
+          {filteredCourses.map((course) => {
+            const counts = getAnalysisTypeCounts(course);
+            const courseKey = getCourseKey(course);
+            return (
+              <Card key={courseKey} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle>{course.name}</CardTitle>
+                  <CardDescription>{formatAcademicYear(course.academic_year)}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4" />
+                      <span>{course.term}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <BarChart3 className="h-4 w-4" />
+                      <span>
+                        速報版: {counts.preliminary}回 / 確定版: {counts.confirmed}回
+                      </span>
+                    </div>
+                    <Button
+                      className="w-full mt-4"
+                      onClick={() => onSelectCourse(course)}
+                    >
+                    分析ダッシュボードを見る
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>
-                      速報版: {course.sessions?.filter(s => s.analysisTypes.includes('速報版')).length || 0}回 /
-                      確定版: {course.sessions?.filter(s => s.analysisTypes.includes('確定版')).length || 0}回
-                    </span>
-                  </div>
-                  <Button
-                    className="w-full mt-4"
-                    onClick={() => onSelectCourse(course.id)}
-                  >
-                  分析ダッシュボードを見る
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

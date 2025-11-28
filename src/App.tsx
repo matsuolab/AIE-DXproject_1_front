@@ -1,167 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { CourseList, type Course } from './components/CourseList';
+import { CourseList } from './components/CourseList';
+import { getCourseKey } from './lib/course-utils';
 import { CourseDashboard } from './components/CourseDashboard';
 import { DataUpload } from './components/DataUpload';
 import { DataDelete } from './components/DataDelete';
 import { Toaster } from './components/ui/sonner';
-
-// モックデータ
-const mockCourses: Course[] = [
-  {
-    id: '1',
-    name: '大規模言語モデル',
-    year: '2024年度',
-    period: '10月～12月',
-    responseCount: 450,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2024-10-07', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2024-10-14', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 3, isSpecialSession: false, lectureDate: '2024-10-21', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 4, isSpecialSession: false, lectureDate: '2024-10-28', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 0, isSpecialSession: true, lectureDate: '2024-11-04', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 5, isSpecialSession: false, lectureDate: '2024-11-11', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 6, isSpecialSession: false, lectureDate: '2024-11-18', analysisTypes: ['速報版'] },
-    ],
-  },
-  {
-    id: '2',
-    name: '機械学習基礎',
-    year: '2024年度',
-    period: '前期（4月-7月）',
-    responseCount: 360,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2024-04-08', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2024-04-15', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 3, isSpecialSession: false, lectureDate: '2024-04-22', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '3',
-    name: 'データサイエンス入門',
-    year: '2024年度',
-    period: '後期（9月-12月）',
-    responseCount: 300,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2024-09-09', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2024-09-16', analysisTypes: ['速報版'] },
-    ],
-  },
-  {
-    id: '4',
-    name: '深層学習応用',
-    year: '2023年度',
-    period: '後期（9月-12月）',
-    responseCount: 420,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-09-11', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2023-09-18', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 0, isSpecialSession: true, lectureDate: '2023-09-25', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '5',
-    name: '自然言語処理',
-    year: '2023年度',
-    period: '前期（4月-7月）',
-    responseCount: 390,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-04-10', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2023-04-17', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '6',
-    name: 'コンピュータビジョン',
-    year: '2023年度',
-    period: '後期（9月-12月）',
-    responseCount: 360,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-09-12', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2023-09-19', analysisTypes: ['速報版'] },
-    ],
-  },
-  // 年度比較用のダミーデータ
-  {
-    id: '7',
-    name: '大規模言語モデル',
-    year: '2023年度',
-    period: '前期（4月-7月）',
-    responseCount: 420,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-04-10', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2023-04-17', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '8',
-    name: '大規模言語モデル',
-    year: '2022年度',
-    period: '前期（4月-7月）',
-    responseCount: 390,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2022-04-11', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '9',
-    name: '機械学習基礎',
-    year: '2023年度',
-    period: '前期（4月-7月）',
-    responseCount: 340,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-04-10', analysisTypes: ['速報版', '確定版'] },
-      { sessionNumber: 2, isSpecialSession: false, lectureDate: '2023-04-17', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '10',
-    name: '機械学習基礎',
-    year: '2022年度',
-    period: '前期（4月-7月）',
-    responseCount: 315,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2022-04-11', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '11',
-    name: 'データサイエンス入門',
-    year: '2023年度',
-    period: '後期（9月-12月）',
-    responseCount: 280,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2023-09-11', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-  {
-    id: '12',
-    name: 'データサイエンス入門',
-    year: '2022年度',
-    period: '後期（9月-12月）',
-    responseCount: 265,
-    sessions: [
-      { sessionNumber: 1, isSpecialSession: false, lectureDate: '2022-09-12', analysisTypes: ['速報版', '確定版'] },
-    ],
-  },
-];
+import { fetchCourses, ApiError } from './api/client';
+import type { CourseItem } from './types/api';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from './components/ui/button';
+import { Card, CardContent } from './components/ui/card';
 
 type ViewMode = 'list' | 'dashboard' | 'upload' | 'delete';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [courses, setCourses] = useState<Course[]>(mockCourses);
-  
-  const selectedCourse = courses.find(c => c.id === selectedCourseId);
+  const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSelectCourse = (courseId: string) => {
-    setSelectedCourseId(courseId);
+  // コース一覧を取得
+  const loadCourses = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetchCourses();
+      setCourses(response.courses);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('講座一覧の取得に失敗しました');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
+
+  const handleSelectCourse = (course: CourseItem) => {
+    setSelectedCourse(course);
     setViewMode('dashboard');
   };
 
   const handleBackToList = () => {
-    setSelectedCourseId(null);
+    setSelectedCourse(null);
     setViewMode('list');
   };
 
@@ -174,51 +62,99 @@ export default function App() {
   };
 
   const handleUploadComplete = () => {
+    // アップロード完了後、講座一覧を再取得
+    loadCourses();
     setViewMode('list');
   };
 
-  const handleDeleteComplete = (courseId: string) => {
-    setCourses(courses.filter(c => c.id !== courseId));
+  const handleDeleteComplete = (courseKey: string) => {
+    // 削除完了後、講座一覧を再取得
+    loadCourses();
+    // 削除された講座が選択中だった場合はクリア
+    if (selectedCourse && getCourseKey(selectedCourse) === courseKey) {
+      setSelectedCourse(null);
+    }
     setViewMode('list');
   };
 
   const showBackButton = viewMode === 'dashboard' || viewMode === 'upload' || viewMode === 'delete';
 
+  // ローディング表示
+  if (isLoading && viewMode === 'list') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header showBackButton={false} onBackClick={handleBackToList} />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">講座データを読み込み中...</p>
+          </div>
+        </div>
+        <Toaster />
+      </div>
+    );
+  }
+
+  // エラー表示
+  if (error && viewMode === 'list') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header showBackButton={false} onBackClick={handleBackToList} />
+        <div className="container mx-auto px-4 py-8">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="py-8">
+              <div className="flex flex-col items-center text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <h2 className="text-lg font-semibold mb-2">エラーが発生しました</h2>
+                <p className="text-gray-600 mb-6">{error}</p>
+                <Button onClick={loadCourses} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  再読み込み
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Toaster />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
-        showBackButton={showBackButton} 
+      <Header
+        showBackButton={showBackButton}
         onBackClick={handleBackToList}
       />
-      
+
       {viewMode === 'dashboard' && selectedCourse ? (
-        <CourseDashboard 
-          courseId={selectedCourse.id}
+        <CourseDashboard
           courseName={selectedCourse.name}
-          courseYear={selectedCourse.year}
-          coursePeriod={selectedCourse.period}
+          courseYear={selectedCourse.academic_year}
+          coursePeriod={selectedCourse.term}
+          courseSessions={selectedCourse.sessions}
           allCourses={courses}
         />
       ) : viewMode === 'upload' ? (
-        <DataUpload 
+        <DataUpload
           onComplete={handleUploadComplete}
           existingCourses={courses}
         />
       ) : viewMode === 'delete' ? (
-        <DataDelete 
+        <DataDelete
           courses={courses}
           onComplete={handleBackToList}
           onDelete={handleDeleteComplete}
         />
       ) : (
-        <CourseList 
-          courses={courses} 
+        <CourseList
+          courses={courses}
           onSelectCourse={handleSelectCourse}
           onAddData={handleAddData}
           onDeleteData={handleDeleteData}
         />
       )}
-      
+
       <Toaster />
     </div>
   );

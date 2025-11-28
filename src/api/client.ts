@@ -1,0 +1,322 @@
+import type {
+  ErrorResponse,
+  CourseListResponse,
+  CourseDetailResponse,
+  OverallTrendsResponse,
+  SessionAnalysisResponse,
+  YearComparisonResponse,
+  UploadResponse,
+  BatchSearchResponse,
+  DeleteResponse,
+  AttributesResponse,
+  UserInfoResponse,
+  AnalysisType,
+  StudentAttribute,
+} from '../types/api';
+
+// ===== 設定 =====
+
+const BASE_URL = '/api/v1';
+
+// ===== エラークラス =====
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+  details?: Record<string, string>;
+
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details?: Record<string, string>
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+// ===== 共通fetch処理 =====
+
+async function fetchApi<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  // 401: セッション切れ → リロードでALBが再認証
+  if (response.status === 401) {
+    window.location.reload();
+    throw new ApiError(401, 'UNAUTHORIZED', 'セッションが無効です。再ログインしてください。');
+  }
+
+  // エラーレスポンスの処理
+  if (!response.ok) {
+    let errorData: ErrorResponse | null = null;
+    try {
+      errorData = await response.json();
+    } catch {
+      // JSONパース失敗時はデフォルトエラー
+    }
+
+    throw new ApiError(
+      response.status,
+      errorData?.error?.code || 'UNKNOWN_ERROR',
+      errorData?.error?.message || `APIエラー: ${response.status}`,
+      errorData?.error?.details
+    );
+  }
+
+  return response.json();
+}
+
+// multipart/form-data用のfetch（ファイルアップロード）
+async function fetchApiMultipart<T>(
+  endpoint: string,
+  formData: FormData
+): Promise<T> {
+  const url = `${BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    // Content-Typeは自動設定（boundary含む）
+  });
+
+  if (response.status === 401) {
+    window.location.reload();
+    throw new ApiError(401, 'UNAUTHORIZED', 'セッションが無効です。再ログインしてください。');
+  }
+
+  if (!response.ok) {
+    let errorData: ErrorResponse | null = null;
+    try {
+      errorData = await response.json();
+    } catch {
+      // JSONパース失敗時はデフォルトエラー
+    }
+
+    throw new ApiError(
+      response.status,
+      errorData?.error?.code || 'UNKNOWN_ERROR',
+      errorData?.error?.message || `APIエラー: ${response.status}`,
+      errorData?.error?.details
+    );
+  }
+
+  return response.json();
+}
+
+// ===== 1. 講座関連API =====
+
+/**
+ * 講座一覧取得
+ * GET /courses
+ */
+export async function fetchCourses(params?: {
+  name?: string;
+  academic_year?: number;
+  term?: string;
+}): Promise<CourseListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.name) searchParams.append('name', params.name);
+  if (params?.academic_year) searchParams.append('academic_year', params.academic_year.toString());
+  if (params?.term) searchParams.append('term', params.term);
+
+  const query = searchParams.toString();
+  const endpoint = query ? `/courses?${query}` : '/courses';
+
+  return fetchApi<CourseListResponse>(endpoint);
+}
+
+/**
+ * 講座詳細取得
+ * GET /courses/detail
+ */
+export async function fetchCourseDetail(params: {
+  name: string;
+  academic_year: number;
+  term: string;
+}): Promise<CourseDetailResponse> {
+  const searchParams = new URLSearchParams({
+    name: params.name,
+    academic_year: params.academic_year.toString(),
+    term: params.term,
+  });
+
+  return fetchApi<CourseDetailResponse>(`/courses/detail?${searchParams}`);
+}
+
+// ===== 2. ダッシュボードAPI =====
+
+/**
+ * 全体傾向データ取得
+ * GET /courses/trends
+ */
+export async function fetchOverallTrends(params: {
+  name: string;
+  academic_year: number;
+  term: string;
+  batch_type: AnalysisType;
+  student_attribute?: StudentAttribute;
+}): Promise<OverallTrendsResponse> {
+  const searchParams = new URLSearchParams({
+    name: params.name,
+    academic_year: params.academic_year.toString(),
+    term: params.term,
+    batch_type: params.batch_type,
+  });
+  if (params.student_attribute) {
+    searchParams.append('student_attribute', params.student_attribute);
+  }
+
+  return fetchApi<OverallTrendsResponse>(`/courses/trends?${searchParams}`);
+}
+
+/**
+ * 講義回別分析データ取得
+ * GET /lectures/:lectureId/analysis
+ */
+export async function fetchSessionAnalysis(
+  lectureId: number,
+  params: {
+    batch_type: AnalysisType;
+    student_attribute?: StudentAttribute;
+  }
+): Promise<SessionAnalysisResponse> {
+  const searchParams = new URLSearchParams({
+    batch_type: params.batch_type,
+  });
+  if (params.student_attribute) {
+    searchParams.append('student_attribute', params.student_attribute);
+  }
+
+  return fetchApi<SessionAnalysisResponse>(`/lectures/${lectureId}/analysis?${searchParams}`);
+}
+
+/**
+ * 年度比較データ取得
+ * GET /courses/compare
+ */
+export async function fetchYearComparison(params: {
+  name: string;
+  current_year: number;
+  current_term: string;
+  compare_year: number;
+  compare_term: string;
+  batch_type: AnalysisType;
+}): Promise<YearComparisonResponse> {
+  const searchParams = new URLSearchParams({
+    name: params.name,
+    current_year: params.current_year.toString(),
+    current_term: params.current_term,
+    compare_year: params.compare_year.toString(),
+    compare_term: params.compare_term,
+    batch_type: params.batch_type,
+  });
+
+  return fetchApi<YearComparisonResponse>(`/courses/compare?${searchParams}`);
+}
+
+// ===== 3. データアップロードAPI =====
+
+/**
+ * アンケートデータアップロード
+ * POST /surveys/upload
+ */
+export async function uploadSurveyData(params: {
+  file: File;
+  course_name: string;
+  academic_year: number;
+  term: string;
+  session: string;
+  lecture_date: string;
+  instructor_name: string;
+  description?: string;
+  batch_type: AnalysisType;
+  zoom_participants?: number;
+  recording_views?: number;
+}): Promise<UploadResponse> {
+  const formData = new FormData();
+
+  formData.append('file', params.file);
+  formData.append('course_name', params.course_name);
+  formData.append('academic_year', params.academic_year.toString());
+  formData.append('term', params.term);
+  formData.append('session', params.session);
+  formData.append('lecture_date', params.lecture_date);
+  formData.append('instructor_name', params.instructor_name);
+  if (params.description) {
+    formData.append('description', params.description);
+  }
+  formData.append('batch_type', params.batch_type);
+  if (params.zoom_participants !== undefined) {
+    formData.append('zoom_participants', params.zoom_participants.toString());
+  }
+  if (params.recording_views !== undefined) {
+    formData.append('recording_views', params.recording_views.toString());
+  }
+
+  return fetchApiMultipart<UploadResponse>('/surveys/upload', formData);
+}
+
+// ===== 4. データ削除API =====
+
+/**
+ * 削除対象バッチ検索
+ * GET /surveys/batches/search
+ */
+export async function searchBatches(params: {
+  course_name: string;
+  academic_year: number;
+  term: string;
+}): Promise<BatchSearchResponse> {
+  const searchParams = new URLSearchParams({
+    course_name: params.course_name,
+    academic_year: params.academic_year.toString(),
+    term: params.term,
+  });
+
+  return fetchApi<BatchSearchResponse>(`/surveys/batches/search?${searchParams}`);
+}
+
+/**
+ * アンケートバッチ削除
+ * DELETE /surveys/batches/:batchId
+ */
+export async function deleteBatch(batchId: number): Promise<DeleteResponse> {
+  return fetchApi<DeleteResponse>(`/surveys/batches/${batchId}`, {
+    method: 'DELETE',
+  });
+}
+
+// ===== 5. 受講生属性API =====
+
+/**
+ * 受講生属性一覧取得
+ * GET /attributes
+ */
+export async function fetchAttributes(): Promise<AttributesResponse> {
+  return fetchApi<AttributesResponse>('/attributes');
+}
+
+// ===== 6. ユーザー情報API =====
+
+/**
+ * ログインユーザー情報取得
+ * GET /me
+ */
+export async function fetchUserInfo(): Promise<UserInfoResponse> {
+  return fetchApi<UserInfoResponse>('/me');
+}
