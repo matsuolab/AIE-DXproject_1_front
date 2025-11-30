@@ -23,6 +23,8 @@ npm install
 ```
 
 ### 4. 環境変数の設定
+> **Note:** `mockup`ブランチを使用している場合は、環境変数の設定は不要です。
+
 `.env.example`をコピーして`.env`ファイルを作成してください。
 ```bash
 cp .env.example .env
@@ -34,11 +36,11 @@ cp .env.example .env
 VITE_API_TARGET="https://your-api-domain.com"
 ```
 
-> **Note:** `mockup`ブランチを使用する場合は、`.env`ファイルの設定は不要です。
-
 ### 5. 開発サーバーの起動
 ```bash
 npm run dev
 ```
 
 ### 6. ブラウザでURLにアクセス
+既定では`http://localhost:5173/`が起動します。 <br>
+もし 5173 ポートが使用中の場合は、別ポートに割り当てられることがあります。
