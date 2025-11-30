@@ -18,7 +18,7 @@ export function Header({ showBackButton, onBackClick }: HeaderProps) {
           )}
           <div className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-blue-600" />
-            <span className="text-xl">講義分析システム</span>
+            <span className="text-xl">講義アンケート分析ダッシュボード</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
