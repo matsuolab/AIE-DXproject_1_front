@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- グラフの軸 -->
+  <path d="M3 3v18h18"/>
+  <!-- 棒グラフ -->
+  <rect x="7" y="13" width="3" height="8" rx="0.5" fill="#3b82f6" stroke="none"/>
+  <rect x="12" y="9" width="3" height="12" rx="0.5" fill="#60a5fa" stroke="none"/>
+  <rect x="17" y="5" width="3" height="16" rx="0.5" fill="#93c5fd" stroke="none"/>
+  <!-- トレンドライン -->
+  <path d="M8.5 10 L13.5 6 L18.5 3" stroke="#f97316" stroke-width="2" fill="none"/>
+  <circle cx="8.5" cy="10" r="1.5" fill="#f97316" stroke="none"/>
+  <circle cx="13.5" cy="6" r="1.5" fill="#f97316" stroke="none"/>
+  <circle cx="18.5" cy="3" r="1.5" fill="#f97316" stroke="none"/>
+</svg>
