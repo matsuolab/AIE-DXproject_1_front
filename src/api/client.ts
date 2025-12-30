@@ -18,6 +18,29 @@ import type {
 
 const BASE_URL = '/api/v1';
 
+// ===== 認証切れ時の共通リダイレクト =====
+// 何回も同じ遷移をしないためのフラグ
+let isRedirectingToLogin = false;
+
+function redirectToLogin() {
+  // SSRなど、window が無い環境対策（念のため）
+  if (typeof window === 'undefined') return;
+
+  // 多重遷移防止
+  if (isRedirectingToLogin) return;
+
+  // すでにログイン開始URLならループ防止
+  if (window.location.pathname === '/api/login') return;
+
+  isRedirectingToLogin = true;
+  window.location.href = '/api/login';
+}
+
+// 「認証切れ」と判断する条件
+function isAuthExpiredByStatus(status: number) {
+  return status === 401 || status === 0;
+}
+
 // ===== エラークラス =====
 
 export class ApiError extends Error {
@@ -47,21 +70,30 @@ async function fetchApi<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  let response: Response;
 
-  // 401: セッション切れ → リロードでALBが再認証
-  if (response.status === 401) {
-    window.location.reload();
-    throw new ApiError(401, 'UNAUTHORIZED', 'セッションが無効です。再ログインしてください。');
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  } catch {
+    // 通信失敗（CORS等）= status 0 相当として扱う
+    redirectToLogin();
+    // 以後の処理を止める（各コンポーネントで個別処理を書かせない）
+    return new Promise<T>(() => {});
   }
 
-  // エラーレスポンスの処理
+  // 401 / 0: 認証切れ扱いでログインへ
+  if (isAuthExpiredByStatus(response.status)) {
+    redirectToLogin();
+    return new Promise<T>(() => {});
+  }
+
+  // エラーレスポンスの処理（認証切れ以外）
   if (!response.ok) {
     let errorData: ErrorResponse | null = null;
     try {
@@ -88,15 +120,24 @@ async function fetchApiMultipart<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    body: formData,
-    // Content-Typeは自動設定（boundary含む）
-  });
+  let response: Response;
 
-  if (response.status === 401) {
-    window.location.reload();
-    throw new ApiError(401, 'UNAUTHORIZED', 'セッションが無効です。再ログインしてください。');
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      // Content-Typeは自動設定（boundary含む）
+    });
+  } catch {
+    // 通信失敗（CORS等）= status 0 相当として扱う
+    redirectToLogin();
+    return new Promise<T>(() => {});
+  }
+
+  // 401 / 0: 認証切れ扱いでログインへ
+  if (isAuthExpiredByStatus(response.status)) {
+    redirectToLogin();
+    return new Promise<T>(() => {});
   }
 
   if (!response.ok) {
