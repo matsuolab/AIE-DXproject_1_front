@@ -77,13 +77,21 @@ export default function App() {
     setViewMode('list');
   };
 
+  const handleLogout = () => {
+    window.location.href = '/api/logout';
+  };
+
   const showBackButton = viewMode === 'dashboard' || viewMode === 'upload' || viewMode === 'delete';
 
   // ローディング表示
   if (isLoading && viewMode === 'list') {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header showBackButton={false} onBackClick={handleBackToList} />
+        <Header
+          showBackButton={false}
+          onBackClick={handleBackToList}
+          onLogout={handleLogout}
+        />
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
@@ -99,7 +107,11 @@ export default function App() {
   if (error && viewMode === 'list') {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header showBackButton={false} onBackClick={handleBackToList} />
+        <Header
+          showBackButton={false}
+          onBackClick={handleBackToList}
+          onLogout={handleLogout}
+        />
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-md mx-auto">
             <CardContent className="py-8">
@@ -125,6 +137,7 @@ export default function App() {
       <Header
         showBackButton={showBackButton}
         onBackClick={handleBackToList}
+        onLogout={handleLogout}
       />
 
       {viewMode === 'dashboard' && selectedCourse ? (
