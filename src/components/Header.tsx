@@ -4,9 +4,10 @@ import { Button } from './ui/button';
 interface HeaderProps {
   showBackButton?: boolean;
   onBackClick?: () => void;
+  onLogout?: () => void;
 }
 
-export function Header({ showBackButton, onBackClick }: HeaderProps) {
+export function Header({ showBackButton, onBackClick, onLogout }: HeaderProps) {
   return (
     <header className="border-b bg-white">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -26,7 +27,7 @@ export function Header({ showBackButton, onBackClick }: HeaderProps) {
             <User className="h-5 w-5" />
             <span>運営者</span>
           </div>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             ログアウト
           </Button>
