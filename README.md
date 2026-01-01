@@ -1,4 +1,4 @@
-# AIE-DXプロジェクト１（フロントエンド）
+# AIE-DXプロジェクト１【フロントエンド】
 
 ## 動かし方
 
@@ -33,7 +33,7 @@ cp .env.example .env
 `.env`ファイルを編集して、バックエンドAPIのURLを指定してください。
 ```bash
 # API接続先（開発時のプロキシ先）
-VITE_API_TARGET="https://your-api-domain.com"
+VITE_API_URL="https://your-api-domain.com"
 ```
 
 ### 5. 開発サーバーの起動
