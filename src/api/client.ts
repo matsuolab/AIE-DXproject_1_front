@@ -30,10 +30,10 @@ function redirectToLogin() {
   if (isRedirectingToLogin) return;
 
   // すでにログイン開始URLならループ防止
-  if (window.location.pathname === '/api/login') return;
+  if (window.location.pathname === `${BASE_URL}/login`) return;
 
   isRedirectingToLogin = true;
-  window.location.href = '/api/login';
+  window.location.href = `${BASE_URL}/login`;
 }
 
 // 「認証切れ」と判断する条件
@@ -360,4 +360,14 @@ export async function fetchAttributes(): Promise<AttributesResponse> {
  */
 export async function fetchUserInfo(): Promise<UserInfoResponse> {
   return fetchApi<UserInfoResponse>('/me');
+}
+
+// ===== 7. 認証API =====
+
+/**
+ * ログアウト
+ * ログアウトエンドポイントへリダイレクト
+ */
+export function logout(): void {
+  window.location.href = `${BASE_URL}/logout`;
 }

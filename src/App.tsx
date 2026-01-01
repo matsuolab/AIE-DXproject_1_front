@@ -6,7 +6,7 @@ import { CourseDashboard } from './components/CourseDashboard';
 import { DataUpload } from './components/DataUpload';
 import { DataDelete } from './components/DataDelete';
 import { Toaster } from './components/ui/sonner';
-import { fetchCourses, ApiError } from './api/client';
+import { fetchCourses, ApiError, logout } from './api/client';
 import type { CourseItem } from './types/api';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -78,7 +78,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    logout();
   };
 
   const showBackButton = viewMode === 'dashboard' || viewMode === 'upload' || viewMode === 'delete';
