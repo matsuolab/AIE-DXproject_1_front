@@ -14,7 +14,7 @@ import type {
   CommentItem,
   Sentiment,
   CommentCategory,
-  Importance,
+  Priority,
   RatingDistribution,
 } from '../types/api';
 import {
@@ -22,7 +22,8 @@ import {
   StudentAttributeFromLabel,
   SentimentLabels,
   CommentCategoryLabels,
-  ImportanceLabels,
+  // ImportanceLabels→PriorityLabelsに変更
+  PriorityLabels,
 } from '../types/api';
 
 // UI表示用の型（CourseDashboardから渡される）
@@ -53,7 +54,8 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [error, setError] = useState<string | null>(null);
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [importanceFilter, setImportanceFilter] = useState<string>('all');
+  // ImportanceLabels→PriorityLabelsに変更
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   // データ取得
   const loadData = useCallback(async () => {
@@ -90,8 +92,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const filteredComments = (data?.comments || []).filter((comment: CommentItem) => {
     const sentimentMatch = sentimentFilter === 'all' || comment.sentiment === sentimentFilter;
     const categoryMatch = categoryFilter === 'all' || comment.category === categoryFilter;
-    const importanceMatch = importanceFilter === 'all' || comment.importance === importanceFilter;
-    return sentimentMatch && categoryMatch && importanceMatch;
+    // ImportanceLabels→PriorityLabelsに変更
+    const priorityMatch = priorityFilter === 'all' || comment.priority === priorityFilter;
+    return sentimentMatch && categoryMatch && priorityMatch;
   });
 
   // NPS表示用の色
@@ -101,12 +104,12 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
 
   const getSentimentIcon = (sentiment: Sentiment | null) => {
     switch (sentiment) {
-    case 'positive':
-      return <ThumbsUp className="h-4 w-4 text-green-600" />;
-    case 'negative':
-      return <ThumbsDown className="h-4 w-4 text-red-600" />;
-    default:
-      return <Minus className="h-4 w-4 text-gray-600" />;
+      case 'positive':
+        return <ThumbsUp className="h-4 w-4 text-green-600" />;
+      case 'negative':
+        return <ThumbsDown className="h-4 w-4 text-red-600" />;
+      default:
+        return <Minus className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -135,17 +138,20 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     return <Badge variant="outline">{CommentCategoryLabels[category]}</Badge>;
   };
 
-  const getImportanceBadge = (importance: Importance | null) => {
-    if (!importance) {
+  // ImportanceLabels→PriorityLabelsに変更
+  const getPriorityBadge = (priority: Priority | null) => {
+    if (!priority) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    const variants: Record<Importance, BadgeConfig> = {
+    // ImportanceLabels→PriorityLabelsに変更
+    const variants: Record<Priority, BadgeConfig> = {
       high: { variant: 'default', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' },
       medium: { variant: 'secondary', className: '' },
       low: { variant: 'outline', className: '' },
     };
-    const config = variants[importance];
-    return <Badge {...config}>{ImportanceLabels[importance]}</Badge>;
+    // ImportanceLabels→PriorityLabelsに変更
+    const config = variants[priority];
+    return <Badge {...config}>{PriorityLabels[priority]}</Badge>;
   };
 
   return (
@@ -517,26 +523,25 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   <CardDescription>優先的に確認すべきコメント</CardDescription>
                 </div>
               </div>
-              {data.important_comments.length > 0 && (
+              {data.priority_comments.length > 0 && (
                 <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-                  {data.important_comments.length}件
+                  {data.priority_comments.length}件
                 </Badge>
               )}
             </div>
           </CardHeader>
           <CardContent>
-            {data.important_comments.length > 0 ? (
+            {data.priority_comments.length > 0 ? (
               <div className="grid gap-4">
-                {data.important_comments.map((comment) => (
+                {data.priority_comments.map((comment) => (
                   <div
                     key={comment.id}
-                    className={`p-4 rounded-lg border-l-4 bg-white shadow-sm ${
-                      comment.sentiment === 'positive'
+                    className={`p-4 rounded-lg border-l-4 bg-white shadow-sm ${comment.sentiment === 'positive'
                         ? 'border-l-green-500'
                         : comment.sentiment === 'negative'
                           ? 'border-l-red-500'
                           : 'border-l-gray-400'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {getSentimentIcon(comment.sentiment)}
@@ -601,7 +606,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
               </div>
               <div>
                 <label className="text-sm mb-2 block">重要度</label>
-                <Select value={importanceFilter} onValueChange={setImportanceFilter}>
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -631,7 +636,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                       <TableRow key={comment.id}>
                         <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
                         <TableCell>{getCategoryBadge(comment.category)}</TableCell>
-                        <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
+                        <TableCell>{getPriorityBadge(comment.priority)}</TableCell>
                         <TableCell>{comment.text}</TableCell>
                       </TableRow>
                     ))
