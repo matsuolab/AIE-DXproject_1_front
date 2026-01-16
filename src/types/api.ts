@@ -8,7 +8,7 @@ export type Sentiment = 'positive' | 'neutral' | 'negative';
 
 export type CommentCategory = 'content' | 'materials' | 'operations' | 'other';
 
-export type Importance = 'high' | 'medium' | 'low';
+export type Priority = 'high' | 'medium' | 'low';
 
 export type QuestionType =
   | 'learned'              // 学んだこと
@@ -62,7 +62,7 @@ export const CommentCategoryLabels: Record<CommentCategory, string> = {
   other: 'その他',
 };
 
-export const ImportanceLabels: Record<Importance, string> = {
+export const PriorityLabels: Record<Priority, string> = {
   high: '高',
   medium: '中',
   low: '低',
@@ -258,7 +258,7 @@ export interface SessionAnalysisResponse {
   nps: SessionNPS;                            // NPS
   average_scores: AverageScoreItem[];         // レーダーチャート用平均点
   score_distributions: ScoreDistributions;    // 評価分布（ヒストグラム用）
-  important_comments: CommentItem[];          // 重要コメント（importance=high）
+  priority_comments: CommentItem[];          // 重要コメント（priority=high）
   comments: CommentItem[];                    // 全コメント
 }
 
@@ -312,7 +312,7 @@ export interface CommentItem {
   text: string;                 // コメント本文
   sentiment: Sentiment | null;  // 感情分析結果（null=未分析）
   category: CommentCategory | null;  // カテゴリ（null=未分類）
-  importance: Importance | null;     // 重要度（null=未判定）
+  priority: Priority | null;     // 重要度（null=未判定）
   question_type: QuestionType;  // 質問タイプ
   created_at: string;           // 回答日時
 }
