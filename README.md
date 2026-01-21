@@ -44,3 +44,13 @@ npm run dev
 ### 6. ブラウザでURLにアクセス
 既定では`http://localhost:5173/`が起動します。 <br>
 もし 5173 ポートが使用中の場合は、別ポートに割り当てられることがあります。
+
+## ドキュメント
+
+`docs/`ディレクトリにバックエンド連携に関するドキュメントがあります。
+
+| ファイル | 内容 |
+|---------|------|
+| [api_specification.md](docs/api_specification.md) | API入出力定義書（エンドポイント、リクエスト/レスポンス形式） |
+| [backend_database.md](docs/backend_database.md) | バックエンドDB設計（ER図、テーブル定義） |
+| [auth_flow.md](docs/auth_flow.md) | 認証フロー（ALB + Cognito連携） |
