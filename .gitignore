@@ -35,5 +35,4 @@ build
 
 # Claude files
 .claude
-docs
 CLAUDE.md
