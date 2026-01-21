@@ -10,6 +10,7 @@ import type {
   DeleteResponse,
   AttributesResponse,
   UserInfoResponse,
+  JobStatusResponse,
   AnalysisType,
   StudentAttribute,
 } from '../types/api';
@@ -362,7 +363,17 @@ export async function fetchUserInfo(): Promise<UserInfoResponse> {
   return fetchApi<UserInfoResponse>('/me');
 }
 
-// ===== 7. 認証API =====
+// ===== 7. 非同期ジョブ管理API =====
+
+/**
+ * ジョブ状態確認
+ * GET /jobs/:jobId
+ */
+export async function fetchJobStatus(jobId: string): Promise<JobStatusResponse> {
+  return fetchApi<JobStatusResponse>(`/jobs/${jobId}`);
+}
+
+// ===== 8. 認証API =====
 
 /**
  * ログアウト

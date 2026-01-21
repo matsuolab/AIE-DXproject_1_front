@@ -12,7 +12,7 @@ import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, AlertTri
 import { toast } from 'sonner';
 import { detectPrivacyColumns, type PrivacyColumnDetectionResult } from '../lib/pii-detector';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
-import { uploadSurveyData, ApiError } from '../api/client';
+import { uploadSurveyData, fetchJobStatus, ApiError } from '../api/client';
 import type { CourseItem, AnalysisType } from '../types/api';
 
 interface DataUploadProps {
@@ -271,19 +271,42 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
         description: 'バックエンドで分析処理を実行しています...',
       });
 
-      // バックエンドの処理状況をポーリング（将来的には実装）
-      // 現在は成功レスポンスを受け取ったら完了として扱う
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // バックエンドの処理状況をポーリング
+      const pollJobStatus = async (jobId: string): Promise<void> => {
+        const maxAttempts = 60; // 最大60回（5分）
+        const pollInterval = 5000; // 5秒間隔
 
-      setUploadStatus('complete');
-      toast.success('アップロードが完了しました！', {
-        description: `講座「${effectiveCourseName}」の${analysisType}データが登録されました。（バッチID: ${response.batch_id}）`,
-      });
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const jobStatus = await fetchJobStatus(jobId);
 
-      // 完了後、少し待ってから講座一覧に戻る
-      setTimeout(() => {
-        onComplete();
-      }, 1500);
+          if (jobStatus.status === 'completed') {
+            setUploadStatus('complete');
+            toast.success('アップロードが完了しました！', {
+              description: `講座「${effectiveCourseName}」の${analysisType}データが登録されました。（${jobStatus.result?.response_count ?? 0}件）`,
+            });
+            setTimeout(() => {
+              onComplete();
+            }, 1500);
+            return;
+          }
+
+          if (jobStatus.status === 'failed') {
+            throw new ApiError(
+              500,
+              jobStatus.error?.code || 'JOB_FAILED',
+              jobStatus.error?.message || 'ジョブの処理に失敗しました'
+            );
+          }
+
+          // queued または processing の場合は待機して再確認
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+
+        // タイムアウト
+        throw new ApiError(408, 'TIMEOUT', '処理がタイムアウトしました。しばらく待ってから再度お試しください。');
+      };
+
+      await pollJobStatus(response.job_id);
 
     } catch (err) {
       if (err instanceof ApiError) {
