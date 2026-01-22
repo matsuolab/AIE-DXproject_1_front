@@ -6,9 +6,13 @@ export type StudentAttribute = 'all' | 'student' | 'corporate' | 'invited' | 'fa
 
 export type Sentiment = 'positive' | 'neutral' | 'negative';
 
-export type CommentCategory = 'content' | 'materials' | 'operations' | 'other';
+export type CommentCategory = 'content' | 'material' | 'operation' | 'instructor';
 
 export type Priority = 'high' | 'medium' | 'low';
+
+export type FixDifficulty = 'easy' | 'hard' | 'none';
+
+export type RiskLevel = 'flag' | 'safe';
 
 export type QuestionType =
   | 'learned'              // 学んだこと
@@ -57,15 +61,26 @@ export const SentimentLabels: Record<Sentiment, string> = {
 
 export const CommentCategoryLabels: Record<CommentCategory, string> = {
   content: '講義内容',
-  materials: '講義資料',
-  operations: '運営',
-  other: 'その他',
+  material: '講義資料',
+  operation: '運営',
+  instructor: '講師',
 };
 
 export const PriorityLabels: Record<Priority, string> = {
   high: '高',
   medium: '中',
   low: '低',
+};
+
+export const FixDifficultyLabels: Record<FixDifficulty, string> = {
+  easy: '容易',
+  hard: '困難',
+  none: 'なし',
+};
+
+export const RiskLevelLabels: Record<RiskLevel, string> = {
+  flag: '要注意',
+  safe: '安全',
 };
 
 // ===== スコアカテゴリのマッピング =====
@@ -284,7 +299,7 @@ export interface SessionNPS {
 export interface AverageScoreItem {
   category: string;             // カテゴリ名（日本語）
   category_key: string;         // カテゴリキー（英語）
-  score: number;                // 平均点（1.00〜5.00）
+  score: number | null;         // 平均点（1.00〜5.00）
   full_mark: number;            // 満点（常に5）
 }
 
@@ -313,6 +328,9 @@ export interface CommentItem {
   sentiment: Sentiment | null;  // 感情分析結果（null=未分析）
   category: CommentCategory | null;  // カテゴリ（null=未分類）
   priority: Priority | null;     // 重要度（null=未判定）
+  fix_difficulty: FixDifficulty | null;  // 修正難易度（null=未判定）
+  risk_level: RiskLevel | null;  // リスクレベル（null=未判定）
+  is_analysis_target: boolean;   // 会議に挙げるべきかどうか
   question_type: QuestionType;  // 質問タイプ
   created_at: string;           // 回答日時
 }

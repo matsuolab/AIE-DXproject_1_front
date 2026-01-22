@@ -15,6 +15,8 @@ import type {
   Sentiment,
   CommentCategory,
   Priority,
+  FixDifficulty,
+  RiskLevel,
   RatingDistribution,
 } from '../types/api';
 import {
@@ -22,8 +24,9 @@ import {
   StudentAttributeFromLabel,
   SentimentLabels,
   CommentCategoryLabels,
-  // ImportanceLabels→PriorityLabelsに変更
   PriorityLabels,
+  FixDifficultyLabels,
+  RiskLevelLabels,
 } from '../types/api';
 
 // UI表示用の型（CourseDashboardから渡される）
@@ -54,8 +57,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [error, setError] = useState<string | null>(null);
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  // ImportanceLabels→PriorityLabelsに変更
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [fixDifficultyFilter, setFixDifficultyFilter] = useState<string>('all');
+  const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
 
   // データ取得
   const loadData = useCallback(async () => {
@@ -92,9 +96,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const filteredComments = (data?.comments || []).filter((comment: CommentItem) => {
     const sentimentMatch = sentimentFilter === 'all' || comment.sentiment === sentimentFilter;
     const categoryMatch = categoryFilter === 'all' || comment.category === categoryFilter;
-    // ImportanceLabels→PriorityLabelsに変更
     const priorityMatch = priorityFilter === 'all' || comment.priority === priorityFilter;
-    return sentimentMatch && categoryMatch && priorityMatch;
+    const fixDifficultyMatch = fixDifficultyFilter === 'all' || comment.fix_difficulty === fixDifficultyFilter;
+    const riskLevelMatch = riskLevelFilter === 'all' || comment.risk_level === riskLevelFilter;
+    return sentimentMatch && categoryMatch && priorityMatch && fixDifficultyMatch && riskLevelMatch;
   });
 
   // NPS表示用の色
@@ -138,20 +143,42 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     return <Badge variant="outline">{CommentCategoryLabels[category]}</Badge>;
   };
 
-  // ImportanceLabels→PriorityLabelsに変更
   const getPriorityBadge = (priority: Priority | null) => {
     if (!priority) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    // ImportanceLabels→PriorityLabelsに変更
     const variants: Record<Priority, BadgeConfig> = {
       high: { variant: 'default', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' },
-      medium: { variant: 'secondary', className: '' },
-      low: { variant: 'outline', className: '' },
+      medium: { variant: 'default', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
+      low: { variant: 'default', className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' },
     };
-    // ImportanceLabels→PriorityLabelsに変更
     const config = variants[priority];
     return <Badge {...config}>{PriorityLabels[priority]}</Badge>;
+  };
+
+  const getFixDifficultyBadge = (fixDifficulty: FixDifficulty | null) => {
+    if (!fixDifficulty) {
+      return <Badge variant="outline">未判定</Badge>;
+    }
+    const variants: Record<FixDifficulty, BadgeConfig> = {
+      easy: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
+      hard: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
+      none: { variant: 'default', className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' },
+    };
+    const config = variants[fixDifficulty];
+    return <Badge {...config}>{FixDifficultyLabels[fixDifficulty]}</Badge>;
+  };
+
+  const getRiskLevelBadge = (riskLevel: RiskLevel | null) => {
+    if (!riskLevel) {
+      return <Badge variant="outline">未判定</Badge>;
+    }
+    const variants: Record<RiskLevel, BadgeConfig> = {
+      flag: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
+      safe: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
+    };
+    const config = variants[riskLevel];
+    return <Badge {...config}>{RiskLevelLabels[riskLevel]}</Badge>;
   };
 
   return (
@@ -537,17 +564,17 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   <div
                     key={comment.id}
                     className={`p-4 rounded-lg border-l-4 bg-white shadow-sm ${comment.sentiment === 'positive'
-                        ? 'border-l-green-500'
-                        : comment.sentiment === 'negative'
-                          ? 'border-l-red-500'
-                          : 'border-l-gray-400'
+                      ? 'border-l-green-500'
+                      : comment.sentiment === 'negative'
+                        ? 'border-l-red-500'
+                        : 'border-l-gray-400'
                       }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {getSentimentIcon(comment.sentiment)}
                       {getSentimentBadge(comment.sentiment)}
                       {getCategoryBadge(comment.category)}
-                    </div>
+                    </div>AIE-DXproject_1_back/app
                     <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
                   </div>
                 ))}
@@ -598,9 +625,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
                     <SelectItem value="content">講義内容</SelectItem>
-                    <SelectItem value="materials">講義資料</SelectItem>
-                    <SelectItem value="operations">運営</SelectItem>
-                    <SelectItem value="other">その他</SelectItem>
+                    <SelectItem value="material">講義資料</SelectItem>
+                    <SelectItem value="operation">運営</SelectItem>
+                    <SelectItem value="instructor">講師</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -618,6 +645,33 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm mb-2 block">修正難易度</label>
+                <Select value={fixDifficultyFilter} onValueChange={setFixDifficultyFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="easy">容易</SelectItem>
+                    <SelectItem value="hard">難しい</SelectItem>
+                    <SelectItem value="none">なし</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm mb-2 block">リスク</label>
+                <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="flag">要注意</SelectItem>
+                    <SelectItem value="safe">安全</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="border rounded-lg">
@@ -627,6 +681,8 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     <TableHead className="w-[100px]">感情</TableHead>
                     <TableHead className="w-[120px]">カテゴリ</TableHead>
                     <TableHead className="w-[100px]">重要度</TableHead>
+                    <TableHead className="w-[100px]">修正難易度</TableHead>
+                    <TableHead className="w-[100px]">リスク</TableHead>
                     <TableHead>コメント</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -637,12 +693,14 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                         <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
                         <TableCell>{getCategoryBadge(comment.category)}</TableCell>
                         <TableCell>{getPriorityBadge(comment.priority)}</TableCell>
+                        <TableCell>{getFixDifficultyBadge(comment.fix_difficulty)}</TableCell>
+                        <TableCell>{getRiskLevelBadge(comment.risk_level)}</TableCell>
                         <TableCell>{comment.text}</TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={6} className="text-center text-gray-500 py-8">
                         条件に一致するコメントがありません
                       </TableCell>
                     </TableRow>
