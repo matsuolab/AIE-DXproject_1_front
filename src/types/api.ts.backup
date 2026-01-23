@@ -83,15 +83,6 @@ export const RiskLevelLabels: Record<RiskLevel, string> = {
   safe: '安全',
 };
 
-export const QuestionTypeLabels: Record<QuestionType, string> = {
-  learned: '学んだこと',
-  good_points: '良かった点',
-  improvements: '改善点',
-  instructor_feedback: '講師フィードバック',
-  future_requests: '今後の要望',
-  free_comment: '自由コメント',
-};
-
 // ===== スコアカテゴリのマッピング =====
 
 export const ScoreCategoryKeys = {

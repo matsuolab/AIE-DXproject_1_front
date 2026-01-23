@@ -27,6 +27,7 @@ import {
   PriorityLabels,
   FixDifficultyLabels,
   RiskLevelLabels,
+  QuestionTypeLabels,
 } from '../types/api';
 
 // UI表示用の型（CourseDashboardから渡される）
@@ -60,6 +61,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [fixDifficultyFilter, setFixDifficultyFilter] = useState<string>('all');
   const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
+  const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all');
 
   // データ取得
   const loadData = useCallback(async () => {
@@ -94,12 +96,57 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
 
   // コメントフィルタリング
   const filteredComments = (data?.comments || []).filter((comment: CommentItem) => {
+    // 「学んだこと」のコメントは常に非表示
+    if (comment.question_type === 'learned') {
+      return false;
+    }
     const sentimentMatch = sentimentFilter === 'all' || comment.sentiment === sentimentFilter;
     const categoryMatch = categoryFilter === 'all' || comment.category === categoryFilter;
     const priorityMatch = priorityFilter === 'all' || comment.priority === priorityFilter;
     const fixDifficultyMatch = fixDifficultyFilter === 'all' || comment.fix_difficulty === fixDifficultyFilter;
     const riskLevelMatch = riskLevelFilter === 'all' || comment.risk_level === riskLevelFilter;
-    return sentimentMatch && categoryMatch && priorityMatch && fixDifficultyMatch && riskLevelMatch;
+    const questionTypeMatch = questionTypeFilter === 'all' || comment.question_type === questionTypeFilter;
+    return sentimentMatch && categoryMatch && priorityMatch && fixDifficultyMatch && riskLevelMatch && questionTypeMatch;
+  });
+
+
+  // ラベル別の集計を計算
+  const allComments = data?.comments || [];
+
+  const labelStats = {
+    questionType: {} as Record<string, number>,
+    sentiment: {} as Record<string, number>,
+    category: {} as Record<string, number>,
+    priority: {} as Record<string, number>,
+    fixDifficulty: {} as Record<string, number>,
+    riskLevel: {} as Record<string, number>,
+  };
+
+  allComments.forEach((comment: CommentItem) => {
+    // 設問タイプ
+    if (comment.question_type) {
+      labelStats.questionType[comment.question_type] = (labelStats.questionType[comment.question_type] || 0) + 1;
+    }
+    // 感情
+    if (comment.sentiment) {
+      labelStats.sentiment[comment.sentiment] = (labelStats.sentiment[comment.sentiment] || 0) + 1;
+    }
+    // カテゴリ
+    if (comment.category) {
+      labelStats.category[comment.category] = (labelStats.category[comment.category] || 0) + 1;
+    }
+    // 優先度
+    if (comment.priority) {
+      labelStats.priority[comment.priority] = (labelStats.priority[comment.priority] || 0) + 1;
+    }
+    // 修正難易度
+    if (comment.fix_difficulty) {
+      labelStats.fixDifficulty[comment.fix_difficulty] = (labelStats.fixDifficulty[comment.fix_difficulty] || 0) + 1;
+    }
+    // リスクレベル
+    if (comment.risk_level) {
+      labelStats.riskLevel[comment.risk_level] = (labelStats.riskLevel[comment.risk_level] || 0) + 1;
+    }
   });
 
   // NPS表示用の色
@@ -574,7 +621,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                       {getSentimentIcon(comment.sentiment)}
                       {getSentimentBadge(comment.sentiment)}
                       {getCategoryBadge(comment.category)}
-                    </div>AIE-DXproject_1_back/app
+                    </div>
                     <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
                   </div>
                 ))}
@@ -593,6 +640,82 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         </Card>
       )}
 
+      {/* ラベル集計表示 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>コメント分析サマリー</CardTitle>
+          <CardDescription>各ラベルの分布状況</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* 感情 */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">感情</h3>
+              <div className="space-y-2">
+                {Object.entries(labelStats.sentiment).map(([sentiment, count]) => (
+                  <div key={sentiment} className="flex items-center justify-between">
+                    <span className="text-sm">{SentimentLabels[sentiment as Sentiment] || sentiment}</span>
+                    <Badge variant="outline">{count}件</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* カテゴリ */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">カテゴリ</h3>
+              <div className="space-y-2">
+                {Object.entries(labelStats.category).map(([category, count]) => (
+                  <div key={category} className="flex items-center justify-between">
+                    <span className="text-sm">{CommentCategoryLabels[category as CommentCategory] || category}</span>
+                    <Badge variant="outline">{count}件</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 優先度 */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">優先度</h3>
+              <div className="space-y-2">
+                {Object.entries(labelStats.priority).map(([priority, count]) => (
+                  <div key={priority} className="flex items-center justify-between">
+                    <span className="text-sm">{PriorityLabels[priority as Priority] || priority}</span>
+                    <Badge variant="outline">{count}件</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 修正難易度 */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">修正難易度</h3>
+              <div className="space-y-2">
+                {Object.entries(labelStats.fixDifficulty).map(([difficulty, count]) => (
+                  <div key={difficulty} className="flex items-center justify-between">
+                    <span className="text-sm">{FixDifficultyLabels[difficulty as FixDifficulty] || difficulty}</span>
+                    <Badge variant="outline">{count}件</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* リスクレベル */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">リスクレベル</h3>
+              <div className="space-y-2">
+                {Object.entries(labelStats.riskLevel).map(([level, count]) => (
+                  <div key={level} className="flex items-center justify-between">
+                    <span className="text-sm">{RiskLevelLabels[level as RiskLevel] || level}</span>
+                    <Badge variant="outline">{count}件</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* コメント一覧 */}
       {selectedLectureId && data && !isLoading && (
         <Card>
@@ -602,6 +725,22 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4 mb-4">
+              <div>
+                <label className="text-sm mb-2 block">設問タイプ</label>
+                <Select value={questionTypeFilter} onValueChange={setQuestionTypeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="good_points">良かった点</SelectItem>
+                    <SelectItem value="improvements">改善点</SelectItem>
+                    <SelectItem value="instructor_feedback">講師フィードバック</SelectItem>
+                    <SelectItem value="future_requests">今後の要望</SelectItem>
+                    <SelectItem value="free_comment">自由コメント</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-sm mb-2 block">感情</label>
                 <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
@@ -678,6 +817,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[120px]">設問タイプ</TableHead>
                     <TableHead className="w-[100px]">感情</TableHead>
                     <TableHead className="w-[120px]">カテゴリ</TableHead>
                     <TableHead className="w-[100px]">重要度</TableHead>
@@ -690,6 +830,11 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   {filteredComments.length > 0 ? (
                     filteredComments.map((comment) => (
                       <TableRow key={comment.id}>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {QuestionTypeLabels[comment.question_type]}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
                         <TableCell>{getCategoryBadge(comment.category)}</TableCell>
                         <TableCell>{getPriorityBadge(comment.priority)}</TableCell>
@@ -700,7 +845,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
                         条件に一致するコメントがありません
                       </TableCell>
                     </TableRow>
