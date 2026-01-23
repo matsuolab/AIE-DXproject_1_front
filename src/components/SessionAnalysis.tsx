@@ -156,12 +156,12 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
 
   const getSentimentIcon = (sentiment: Sentiment | null) => {
     switch (sentiment) {
-      case 'positive':
-        return <ThumbsUp className="h-4 w-4 text-green-600" />;
-      case 'negative':
-        return <ThumbsDown className="h-4 w-4 text-red-600" />;
-      default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+    case 'positive':
+      return <ThumbsUp className="h-4 w-4 text-green-600" />;
+    case 'negative':
+      return <ThumbsDown className="h-4 w-4 text-red-600" />;
+    default:
+      return <Minus className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -615,7 +615,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                       : comment.sentiment === 'negative'
                         ? 'border-l-red-500'
                         : 'border-l-gray-400'
-                      }`}
+                    }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {getSentimentIcon(comment.sentiment)}
