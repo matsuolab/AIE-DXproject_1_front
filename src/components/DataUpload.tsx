@@ -5,6 +5,16 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Textarea } from './ui/textarea';
@@ -45,6 +55,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [privacyDetectionResult, setPrivacyDetectionResult] = useState<PrivacyColumnDetectionResult | null>(null);
   const [isCheckingPrivacy, setIsCheckingPrivacy] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   // 重複検出は派生状態なので useMemo で算出し、不要な再レンダーを防ぐ
   // 既存講座選択時に派生させる講座情報（stateに二重保持しない）
   const selectedCourse = useMemo(() => {
@@ -165,6 +176,36 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
 
   const handleClickUploadArea = () => {
     fileInputRef.current?.click();
+  };
+
+  const hasInput =
+    Boolean(file) ||
+    Boolean(selectedCourseName) ||
+    Boolean(selectedYear) ||
+    Boolean(selectedPeriod) ||
+    Boolean(courseName) ||
+    Boolean(year) ||
+    Boolean(period) ||
+    Boolean(sessionNumber) ||
+    Boolean(zoomParticipants) ||
+    Boolean(recordingViews) ||
+    Boolean(instructorName) ||
+    Boolean(lectureContent) ||
+    Boolean(lectureDate) ||
+    isSpecialSession ||
+    isNewCourse;
+
+  const handleCancel = () => {
+    if (hasInput) {
+      setShowCancelConfirm(true);
+      return;
+    }
+    onComplete();
+  };
+
+  const handleCancelConfirm = () => {
+    setShowCancelConfirm(false);
+    onComplete();
   };
 
   // 既存講座選択用のユニークな値を取得
@@ -892,7 +933,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
         <div className="flex justify-end gap-3">
           <Button
             variant="outline"
-            onClick={onComplete}
+            onClick={handleCancel}
             disabled={isUploading}
           >
             キャンセル
@@ -912,6 +953,26 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
             )}
           </Button>
         </div>
+
+        <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>入力内容を破棄しますか？</AlertDialogTitle>
+              <AlertDialogDescription>
+                すでに入力した内容やアップロードしたファイルは破棄されます。本当に戻りますか？
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancelConfirm}
+                className="bg-destructive text-white hover:bg-destructive/90"
+              >
+                破棄して戻る
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
