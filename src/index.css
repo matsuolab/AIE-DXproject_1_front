@@ -2725,3 +2725,41 @@ html {
     height: 0;
   }
 }
+
+/* Button interaction helpers (custom, since utilities are precompiled). */
+.btn-interactive {
+  outline: none;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out, outline-color 150ms ease-out, outline-offset 150ms ease-out;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -4px rgb(0 0 0 / 0.12), 0 2px 4px -3px rgb(0 0 0 / 0.08);
+  outline: 2px solid color-mix(in oklab, var(--ring) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.btn-interactive:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 4px -2px rgb(0 0 0 / 0.1), 0 1px 2px -2px rgb(0 0 0 / 0.08);
+}
+
+.btn-interactive:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ring) 50%, transparent);
+  outline-offset: 2px;
+}
+
+.btn-no-interactive {
+  transition: none;
+}
+
+.btn-no-interactive:hover,
+.btn-no-interactive:active {
+  transform: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.btn-no-interactive:focus-visible {
+  outline: none;
+}

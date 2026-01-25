@@ -68,7 +68,11 @@ export function CourseList({ courses, onSelectCourse, onAddData, onDeleteData }:
             <Plus className="h-5 w-5 mr-2" />
             新しいデータを追加
           </Button>
-          <Button onClick={onDeleteData} size="icon" variant="outline">
+          <Button
+            onClick={onDeleteData}
+            size="icon"
+            variant="outline"
+          >
             <Trash2 className="h-5 w-5" />
           </Button>
         </div>
