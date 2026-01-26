@@ -765,8 +765,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     <SelectItem value="all">すべて</SelectItem>
                     <SelectItem value="content">講義内容</SelectItem>
                     <SelectItem value="material">講義資料</SelectItem>
-                    <SelectItem value="operation">運営</SelectItem>
                     <SelectItem value="instructor">講師</SelectItem>
+                    <SelectItem value="operation">運営</SelectItem>
+                    <SelectItem value="other">その他</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

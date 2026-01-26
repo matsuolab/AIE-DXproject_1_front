@@ -6,7 +6,7 @@ export type StudentAttribute = 'all' | 'student' | 'corporate' | 'invited' | 'fa
 
 export type Sentiment = 'positive' | 'neutral' | 'negative';
 
-export type CommentCategory = 'content' | 'material' | 'operation' | 'instructor';
+export type CommentCategory = 'content' | 'material' | 'instructor' | 'operation' | 'other';
 
 export type Priority = 'high' | 'medium' | 'low';
 
@@ -62,8 +62,9 @@ export const SentimentLabels: Record<Sentiment, string> = {
 export const CommentCategoryLabels: Record<CommentCategory, string> = {
   content: '講義内容',
   material: '講義資料',
-  operation: '運営',
   instructor: '講師',
+  operation: '運営',
+  other: 'その他',
 };
 
 export const PriorityLabels: Record<Priority, string> = {
@@ -272,7 +273,7 @@ export interface SentimentSummaryItem {
 }
 
 export interface CategorySummaryItem {
-  category: CommentCategory;    // content / materials / operations / other
+  category: CommentCategory;    // content / material / instructor / operation / other
   count: number;                // コメント数
 }
 
@@ -336,12 +337,11 @@ export interface CommentItem {
   text: string;                 // コメント本文
   sentiment: Sentiment | null;  // 感情分析結果（null=未分析）
   category: CommentCategory | null;  // カテゴリ（null=未分類）
-  priority: Priority | null;     // 重要度（null=未判定）
+  priority: Priority | null;    // 重要度（null=未判定）
   fix_difficulty: FixDifficulty | null;  // 修正難易度（null=未判定）
   risk_level: RiskLevel | null;  // リスクレベル（null=未判定）
   is_analysis_target: boolean;   // 会議に挙げるべきかどうか
   question_type: QuestionType;  // 質問タイプ
-  created_at: string;           // 回答日時
 }
 
 // 2.3 年度比較データ取得 GET /courses/compare
@@ -389,9 +389,8 @@ export interface ScoreComparisonItem {
 // 3.1 アンケートデータアップロード POST /surveys/upload
 export interface UploadResponse {
   success: true;
-  lecture_id: number;
-  batch_id: number;
-  response_count: number;
+  job_id: string;        // ジョブ識別子（batch_id）
+  status_url: string;    // 状態確認用URL
   message: string;
 }
 
@@ -441,6 +440,28 @@ export interface AttributesResponse {
 export interface AttributeItem {
   key: StudentAttribute;        // 属性キー（英語）
   label: string;                // 表示名（日本語）
+}
+
+// ===== 5.5 非同期ジョブ管理API =====
+
+// 5.5.1 ジョブ状態確認 GET /jobs/:jobId
+export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
+export interface JobStatusResponse {
+  job_id: string;
+  status: JobStatus;
+  created_at: string;
+  // status='completed' の場合のみ
+  result?: {
+    lecture_id: number;
+    batch_id: number;
+    response_count: number;
+  };
+  // status='failed' の場合のみ
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 // ===== 6. ユーザー情報API =====
