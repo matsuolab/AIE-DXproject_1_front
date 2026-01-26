@@ -61,13 +61,13 @@ erDiagram
         string question_type "設問タイプ"
         text comment_text "コメント本文"
         string llm_sentiment_type "ポジネガ"
-        string llm_category "カテゴリ"
-        string llm_priority "優先度"
-        string llm_fix_difficulty "修正難易度"
-        boolean llm_is_analysis_target "会議に挙げるべきかどうか"
+        string llm_category "カテゴリ" 
+        string llm_importance "優先度"
+        string llm_fix_difficulty "修正難易度" 
+        int meeting_priority "会議に挙げるべき優先順位"
         boolean llm_is_abusive "危険かどうか"
         boolean is_analyzed "分析したかどうか"
-    }
+       }
 
     SURVEY_SUMMARIES {
         bigint id PK
@@ -181,8 +181,9 @@ erDiagram
 | `comment_text` | TEXT | Not Null | コメント本文 |
 | `llm_sentiment_type` | VARCHAR(20) | Nullable | `positive`, `neutral`, `negative` |
 | `llm_category` | VARCHAR(50) | Nullable | `content`, `material`, `instructor`, `operation`, `other` |
-| `llm_fix_difficulty` | VARCHAR(10) | Nullable | `high`, `medium`, `low` |
-| `llm_is_analysis_target` | BOOLEAN | Default FALSE | 会議に挙げるべきかどうかのフラグ |
+| `llm_importance`  | VARCHAR(10) | Nullable | `high`, `medium`, `low` |
+| `llm_fix_difficulty`  | VARCHAR(10) | Nullable | `hard`, `easy`, `none` |
+| `meeting_priority`  | INT | Nullable | 会議に挙げるべき優先順位（1-10）。LLMで分析した結果から自動的に付与。 |
 | `llm_is_abusive` | BOOLEAN | Default FALSE | 誹謗中傷や攻撃的な発言など危険かどうかのフラグ |
 | `is_analyzed` | BOOLEAN | Default FALSE | LLM分析済みかどうかのフラグ（あると便利） |
 
