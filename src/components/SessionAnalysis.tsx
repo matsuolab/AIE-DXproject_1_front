@@ -14,9 +14,8 @@ import type {
   CommentItem,
   Sentiment,
   CommentCategory,
-  Priority,
+  Importance,
   FixDifficulty,
-  RiskLevel,
   RatingDistribution,
 } from '../types/api';
 import {
@@ -24,9 +23,8 @@ import {
   StudentAttributeFromLabel,
   SentimentLabels,
   CommentCategoryLabels,
-  PriorityLabels,
+  ImportanceLabels,
   FixDifficultyLabels,
-  RiskLevelLabels,
   QuestionTypeLabels,
 } from '../types/api';
 
@@ -58,9 +56,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [error, setError] = useState<string | null>(null);
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [importanceFilter, setImportanceFilter] = useState<string>('all');
   const [fixDifficultyFilter, setFixDifficultyFilter] = useState<string>('all');
-  const [riskLevelFilter, setRiskLevelFilter] = useState<string>('all');
+  const [isAbusiveFilter, setIsAbusiveFilter] = useState<string>('all');
   const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all');
 
   // データ取得
@@ -102,11 +100,13 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     }
     const sentimentMatch = sentimentFilter === 'all' || comment.sentiment === sentimentFilter;
     const categoryMatch = categoryFilter === 'all' || comment.category === categoryFilter;
-    const priorityMatch = priorityFilter === 'all' || comment.priority === priorityFilter;
+    const importanceMatch = importanceFilter === 'all' || comment.importance === importanceFilter;
     const fixDifficultyMatch = fixDifficultyFilter === 'all' || comment.fix_difficulty === fixDifficultyFilter;
-    const riskLevelMatch = riskLevelFilter === 'all' || comment.risk_level === riskLevelFilter;
+    const isAbusiveMatch = isAbusiveFilter === 'all' ||
+      (isAbusiveFilter === 'true' && comment.is_abusive === true) ||
+      (isAbusiveFilter === 'false' && comment.is_abusive === false);
     const questionTypeMatch = questionTypeFilter === 'all' || comment.question_type === questionTypeFilter;
-    return sentimentMatch && categoryMatch && priorityMatch && fixDifficultyMatch && riskLevelMatch && questionTypeMatch;
+    return sentimentMatch && categoryMatch && importanceMatch && fixDifficultyMatch && isAbusiveMatch && questionTypeMatch;
   });
 
 
@@ -117,9 +117,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     questionType: {} as Record<string, number>,
     sentiment: {} as Record<string, number>,
     category: {} as Record<string, number>,
-    priority: {} as Record<string, number>,
+    importance: {} as Record<string, number>,
     fixDifficulty: {} as Record<string, number>,
-    riskLevel: {} as Record<string, number>,
+    isAbusive: { true: 0, false: 0 } as Record<string, number>,
   };
 
   allComments.forEach((comment: CommentItem) => {
@@ -135,17 +135,18 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     if (comment.category) {
       labelStats.category[comment.category] = (labelStats.category[comment.category] || 0) + 1;
     }
-    // 優先度
-    if (comment.priority) {
-      labelStats.priority[comment.priority] = (labelStats.priority[comment.priority] || 0) + 1;
+    // 重要度
+    if (comment.importance) {
+      labelStats.importance[comment.importance] = (labelStats.importance[comment.importance] || 0) + 1;
     }
     // 修正難易度
     if (comment.fix_difficulty) {
       labelStats.fixDifficulty[comment.fix_difficulty] = (labelStats.fixDifficulty[comment.fix_difficulty] || 0) + 1;
     }
-    // リスクレベル
-    if (comment.risk_level) {
-      labelStats.riskLevel[comment.risk_level] = (labelStats.riskLevel[comment.risk_level] || 0) + 1;
+    // 誹謗中傷フラグ
+    if (comment.is_abusive !== null) {
+      const key = comment.is_abusive ? 'true' : 'false';
+      labelStats.isAbusive[key] = (labelStats.isAbusive[key] || 0) + 1;
     }
   });
 
@@ -190,17 +191,17 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     return <Badge variant="outline">{CommentCategoryLabels[category]}</Badge>;
   };
 
-  const getPriorityBadge = (priority: Priority | null) => {
-    if (!priority) {
+  const getImportanceBadge = (importance: Importance | null) => {
+    if (!importance) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    const variants: Record<Priority, BadgeConfig> = {
+    const variants: Record<Importance, BadgeConfig> = {
       high: { variant: 'default', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' },
       medium: { variant: 'default', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
       low: { variant: 'default', className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' },
     };
-    const config = variants[priority];
-    return <Badge {...config}>{PriorityLabels[priority]}</Badge>;
+    const config = variants[importance];
+    return <Badge {...config}>{ImportanceLabels[importance]}</Badge>;
   };
 
   const getFixDifficultyBadge = (fixDifficulty: FixDifficulty | null) => {
@@ -216,16 +217,14 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     return <Badge {...config}>{FixDifficultyLabels[fixDifficulty]}</Badge>;
   };
 
-  const getRiskLevelBadge = (riskLevel: RiskLevel | null) => {
-    if (!riskLevel) {
+  const getIsAbusiveBadge = (isAbusive: boolean | null) => {
+    if (isAbusive === null) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    const variants: Record<RiskLevel, BadgeConfig> = {
-      flag: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
-      safe: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
-    };
-    const config = variants[riskLevel];
-    return <Badge {...config}>{RiskLevelLabels[riskLevel]}</Badge>;
+    if (isAbusive) {
+      return <Badge variant="default" className="bg-red-100 text-red-800 hover:bg-red-100">要注意</Badge>;
+    }
+    return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">安全</Badge>;
   };
 
   return (
@@ -674,13 +673,13 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
               </div>
             </div>
 
-            {/* 優先度 */}
+            {/* 重要度 */}
             <div>
-              <h3 className="text-sm font-semibold mb-3">優先度</h3>
+              <h3 className="text-sm font-semibold mb-3">重要度</h3>
               <div className="space-y-2">
-                {Object.entries(labelStats.priority).map(([priority, count]) => (
-                  <div key={priority} className="flex items-center justify-between">
-                    <span className="text-sm">{PriorityLabels[priority as Priority] || priority}</span>
+                {Object.entries(labelStats.importance).map(([importance, count]) => (
+                  <div key={importance} className="flex items-center justify-between">
+                    <span className="text-sm">{ImportanceLabels[importance as Importance] || importance}</span>
                     <Badge variant="outline">{count}件</Badge>
                   </div>
                 ))}
@@ -700,16 +699,22 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
               </div>
             </div>
 
-            {/* リスクレベル */}
+            {/* 誹謗中傷フラグ */}
             <div>
-              <h3 className="text-sm font-semibold mb-3">リスクレベル</h3>
+              <h3 className="text-sm font-semibold mb-3">誹謗中傷</h3>
               <div className="space-y-2">
-                {Object.entries(labelStats.riskLevel).map(([level, count]) => (
-                  <div key={level} className="flex items-center justify-between">
-                    <span className="text-sm">{RiskLevelLabels[level as RiskLevel] || level}</span>
-                    <Badge variant="outline">{count}件</Badge>
+                {labelStats.isAbusive['true'] > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">要注意</span>
+                    <Badge variant="outline">{labelStats.isAbusive['true']}件</Badge>
                   </div>
-                ))}
+                )}
+                {labelStats.isAbusive['false'] > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">安全</span>
+                    <Badge variant="outline">{labelStats.isAbusive['false']}件</Badge>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -773,7 +778,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
               </div>
               <div>
                 <label className="text-sm mb-2 block">重要度</label>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <Select value={importanceFilter} onValueChange={setImportanceFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -800,15 +805,15 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                 </Select>
               </div>
               <div>
-                <label className="text-sm mb-2 block">リスク</label>
-                <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+                <label className="text-sm mb-2 block">誹謗中傷</label>
+                <Select value={isAbusiveFilter} onValueChange={setIsAbusiveFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
-                    <SelectItem value="flag">要注意</SelectItem>
-                    <SelectItem value="safe">安全</SelectItem>
+                    <SelectItem value="true">要注意</SelectItem>
+                    <SelectItem value="false">安全</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -823,7 +828,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     <TableHead className="w-[120px]">カテゴリ</TableHead>
                     <TableHead className="w-[100px]">重要度</TableHead>
                     <TableHead className="w-[100px]">修正難易度</TableHead>
-                    <TableHead className="w-[100px]">リスク</TableHead>
+                    <TableHead className="w-[100px]">誹謗中傷</TableHead>
                     <TableHead>コメント</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -838,9 +843,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                         </TableCell>
                         <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
                         <TableCell>{getCategoryBadge(comment.category)}</TableCell>
-                        <TableCell>{getPriorityBadge(comment.priority)}</TableCell>
+                        <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
                         <TableCell>{getFixDifficultyBadge(comment.fix_difficulty)}</TableCell>
-                        <TableCell>{getRiskLevelBadge(comment.risk_level)}</TableCell>
+                        <TableCell>{getIsAbusiveBadge(comment.is_abusive)}</TableCell>
                         <TableCell>{comment.text}</TableCell>
                       </TableRow>
                     ))
