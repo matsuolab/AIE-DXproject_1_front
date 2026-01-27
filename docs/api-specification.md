@@ -628,7 +628,7 @@ interface SessionAnalysisResponse {
   nps: SessionNPS;                            // NPS
   average_scores: AverageScoreItem[];         // レーダーチャート用平均点
   score_distributions: ScoreDistributions;    // 評価分布（ヒストグラム用）
-  priority_comments: CommentItem[];           // 重要コメント（priority=high）
+  priority_comments: CommentItem[];           // 重要コメント（importance=high）
   comments: CommentItem[];                    // 全コメント
 }
 
@@ -687,9 +687,20 @@ interface CommentItem {
   text: string;                 // コメント本文
   sentiment: Sentiment | null;  // 感情分析結果（null=未分析）
   category: CommentCategory | null;  // カテゴリ（null=未分類）
-  priority: Priority | null;    // 優先度（null=未判定）
+  importance: Importance | null;    // 重要度（null=未判定）
   fix_difficulty: FixDifficulty | null;  // 修正難易度（null=未判定）
-  is_analysis_target: boolean;  // 会議に挙げるべきかどうか
+  meeting_priority: number | null;  // 会議に挙げるべき優先順位（1-10、null=未判定）
+  // 1: 第1優先（運営確認）- High/Easy/ネガティブかつ運営・資料カテゴリ
+  // 2: 第2優先 - High/Easy
+  // 3: 第3優先 - High/Hard
+  // 4: 第4優先 - Medium/Easy
+  // 5: 第5優先 - Medium/Hard
+  // 6: 第6優先 - Low/Easy
+  // 7: 第7優先 - Low/Hard（Negativeのみ）
+  // 8: 第8優先 - High/None（ポジティブ）
+  // 9: 第9優先 - Medium/None（ポジティブ）
+  // 10: 第10優先 - Low/None（ポジティブ）
+  is_abusive: boolean | null;   // 誹謗中傷・攻撃的発言フラグ（null=未判定）
   question_type: QuestionType;  // 質問タイプ
 }
 ```
@@ -746,14 +757,15 @@ interface CommentItem {
   },
   "priority_comments": [
     {
-      "id": "comment-001",
-      "text": "非常にわかりやすい説明で、大規模言語モデルの基礎がよく理解できました。",
-      "sentiment": "positive",
-      "category": "content",
-      "priority": "high",
-      "fix_difficulty": null,
-      "is_analysis_target": true,
-      "question_type": "good_points"
+      "id": "comment-002",
+      "text": "配布資料のPDFが一部文字化けしていました。",
+      "sentiment": "negative",
+      "category": "material",
+      "importance": "high",
+      "fix_difficulty": "easy",
+      "meeting_priority": 1,
+      "is_abusive": false,
+      "question_type": "improvements"
     }
   ],
   "comments": [
@@ -762,9 +774,10 @@ interface CommentItem {
       "text": "非常にわかりやすい説明で、大規模言語モデルの基礎がよく理解できました。",
       "sentiment": "positive",
       "category": "content",
-      "priority": "high",
+      "importance": "high",
       "fix_difficulty": null,
-      "is_analysis_target": true,
+      "meeting_priority": 8,
+      "is_abusive": false,
       "question_type": "good_points"
     },
     {
@@ -772,9 +785,10 @@ interface CommentItem {
       "text": "配布資料のPDFが一部文字化けしていました。",
       "sentiment": "negative",
       "category": "material",
-      "priority": "high",
-      "fix_difficulty": "medium",
-      "is_analysis_target": true,
+      "importance": "high",
+      "fix_difficulty": "easy",
+      "meeting_priority": 1,
+      "is_abusive": false,
       "question_type": "improvements"
     }
   ]
@@ -1263,7 +1277,7 @@ function logout() {
 
 - `positive`, `neutral`, `negative`
 
-### Priority (優先度)
+### Importance (重要度)
 
 - `high`: 高
 - `medium`: 中
@@ -1271,9 +1285,9 @@ function logout() {
 
 ### FixDifficulty (修正難易度)
 
-- `high`: 高
-- `medium`: 中
-- `low`: 低
+- `hard`: 難しい
+- `easy`: 簡単
+- `none`: 修正不要
 
 ### CommentCategory
 

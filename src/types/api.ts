@@ -8,11 +8,10 @@ export type Sentiment = 'positive' | 'neutral' | 'negative';
 
 export type CommentCategory = 'content' | 'material' | 'instructor' | 'operation' | 'other';
 
-export type Priority = 'high' | 'medium' | 'low';
+export type Importance = 'high' | 'medium' | 'low';
 
 export type FixDifficulty = 'easy' | 'hard' | 'none';
 
-export type RiskLevel = 'flag' | 'safe';
 
 export type QuestionType =
   | 'learned'              // 学んだこと
@@ -67,7 +66,7 @@ export const CommentCategoryLabels: Record<CommentCategory, string> = {
   other: 'その他',
 };
 
-export const PriorityLabels: Record<Priority, string> = {
+export const ImportanceLabels: Record<Importance, string> = {
   high: '高',
   medium: '中',
   low: '低',
@@ -79,10 +78,6 @@ export const FixDifficultyLabels: Record<FixDifficulty, string> = {
   none: 'なし',
 };
 
-export const RiskLevelLabels: Record<RiskLevel, string> = {
-  flag: '要注意',
-  safe: '安全',
-};
 
 export const QuestionTypeLabels: Record<QuestionType, string> = {
   learned: '学んだこと',
@@ -283,7 +278,7 @@ export interface SessionAnalysisResponse {
   nps: SessionNPS;                            // NPS
   average_scores: AverageScoreItem[];         // レーダーチャート用平均点
   score_distributions: ScoreDistributions;    // 評価分布（ヒストグラム用）
-  priority_comments: CommentItem[];          // 重要コメント（priority=high）
+  priority_comments: CommentItem[];          // 重要コメント（importance=high）
   comments: CommentItem[];                    // 全コメント
 }
 
@@ -337,10 +332,10 @@ export interface CommentItem {
   text: string;                 // コメント本文
   sentiment: Sentiment | null;  // 感情分析結果（null=未分析）
   category: CommentCategory | null;  // カテゴリ（null=未分類）
-  priority: Priority | null;    // 重要度（null=未判定）
+  importance: Importance | null;    // 重要度（null=未判定）
   fix_difficulty: FixDifficulty | null;  // 修正難易度（null=未判定）
-  risk_level: RiskLevel | null;  // リスクレベル（null=未判定）
-  is_analysis_target: boolean;   // 会議に挙げるべきかどうか
+  meeting_priority: number | null;   // 会議に挙げるべき優先順位（1-10、null=未判定）
+  is_abusive: boolean | null;   // 誹謗中傷・攻撃的発言フラグ（null=未判定）
   question_type: QuestionType;  // 質問タイプ
 }
 
