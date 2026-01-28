@@ -379,6 +379,18 @@ export async function fetchJobStatus(jobId: string): Promise<JobStatusResponse> 
  * ログアウト
  * ログアウトエンドポイントへリダイレクト
  */
+
+const COGNITO_DOMAIN = "ap-northeast-1tnj7xwspp.auth.ap-northeast-1.amazoncognito.com";
+const CLIENT_ID = "4ukh5lqeoglamjvthd6g87ghlu";
+const SIGN_OUT_URL = "https://le-questionnaire-analysis-app.lecture.weblab-dev.com";
+
 export function logout(): void {
-  window.location.href = `${BASE_URL}/logout`;
+
+  const url =
+    `https://${COGNITO_DOMAIN}/logout` +
+    `?client_id=${encodeURIComponent(CLIENT_ID)}` +
+    `&logout_uri=${encodeURIComponent(SIGN_OUT_URL)}`;
+
+  window.location.assign(url);
+
 }
