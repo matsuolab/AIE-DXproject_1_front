@@ -314,7 +314,7 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
 
       // バックエンドの処理状況をポーリング
       const pollJobStatus = async (jobId: string): Promise<void> => {
-        const maxAttempts = 120; // 最大120回（20分）
+        const maxAttempts = 600; // 最大600回（100分）
         const pollInterval = 10000; // 10秒間隔
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
