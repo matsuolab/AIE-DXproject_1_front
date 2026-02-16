@@ -1,5 +1,19 @@
 # AIE-DXプロジェクト１【フロントエンド】
 
+## 使用技術
+
+| カテゴリ | 技術 |
+|---------|------|
+| 言語 | TypeScript 5.9 |
+| UIライブラリ | React 19 |
+| ビルドツール | Vite 7 |
+| スタイリング | Tailwind CSS |
+| UIコンポーネント | shadcn/ui (Radix UI) |
+| グラフ描画 | Recharts 3 |
+| フォーム | React Hook Form |
+| Excel処理 | SheetJS (xlsx) |
+| リンター | ESLint 9 |
+
 ## 動かし方
 
 ### 1. リポジトリのクローン
@@ -51,6 +65,6 @@ npm run dev
 
 | ファイル | 内容 |
 |---------|------|
-| [api_specification.md](docs/api_specification.md) | API入出力定義書（エンドポイント、リクエスト/レスポンス形式） |
-| [backend_database.md](docs/backend_database.md) | バックエンドDB設計（ER図、テーブル定義） |
-| [auth_flow.md](docs/auth_flow.md) | 認証フロー（ALB + Cognito連携） |
+| [api-specification.md](docs/api-specification.md) | API仕様書（エンドポイント、リクエスト/レスポンス形式） |
+| [database.md](docs/database.md) | DB設計（ER図、テーブル定義） |
+| [auth-flow.md](docs/auth-flow.md) | 認証フロー（ALB + Cognito連携） |
