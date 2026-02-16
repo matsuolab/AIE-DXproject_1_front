@@ -38,7 +38,7 @@ export const StudentAttributeLabels: Record<StudentAttribute, string> = {
   student: '学生',
   corporate: '会員企業',
   invited: '招待枠',
-  faculty: '教職員',
+  faculty: '教員',
   other: 'その他/不明',
 };
 
@@ -47,9 +47,8 @@ export const StudentAttributeFromLabel: Record<string, StudentAttribute> = {
   '学生': 'student',
   '会員企業': 'corporate',
   '招待枠': 'invited',
-  '教職員': 'faculty',
+  '教員': 'faculty',
   'その他/不明': 'other',
-  '不明': 'other',
 };
 
 export const SentimentLabels: Record<Sentiment, string> = {
@@ -193,7 +192,7 @@ export interface ResponseTrendItem {
     student: number;            // 学生の回答数
     corporate: number;          // 会員企業の回答数
     invited: number;            // 招待枠の回答数
-    faculty: number;            // 教職員の回答数
+    faculty: number;            // 教員の回答数
     other: number;              // その他/不明の回答数
   };
 }
@@ -278,7 +277,8 @@ export interface SessionAnalysisResponse {
   nps: SessionNPS;                            // NPS
   average_scores: AverageScoreItem[];         // レーダーチャート用平均点
   score_distributions: ScoreDistributions;    // 評価分布（ヒストグラム用）
-  priority_comments: CommentItem[];          // 重要コメント（importance=high）
+  fix_difficulty: { easy: number; hard: number }; // 修正難易度別件数
+  priority_comments: CommentItem[];          // 重要コメント（meeting_priority=1）
   comments: CommentItem[];                    // 全コメント
 }
 
@@ -304,7 +304,7 @@ export interface SessionNPS {
 export interface AverageScoreItem {
   category: string;             // カテゴリ名（日本語）
   category_key: string;         // カテゴリキー（英語）
-  score: number | null;         // 平均点（1.00〜5.00）
+  score: number;                // 平均点（1.00〜5.00）
   full_mark: number;            // 満点（常に5）
 }
 
@@ -387,18 +387,6 @@ export interface UploadResponse {
   job_id: string;        // ジョブ識別子（batch_id）
   status_url: string;    // 状態確認用URL
   message: string;
-}
-
-export interface ConflictResponse {
-  error: {
-    code: 'CONFLICT';
-    message: string;
-    existing_data: {
-      lecture_id: number;
-      batch_id: number;
-      uploaded_at: string;
-    };
-  };
 }
 
 // ===== 4. データ削除API =====

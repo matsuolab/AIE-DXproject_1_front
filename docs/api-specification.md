@@ -628,7 +628,8 @@ interface SessionAnalysisResponse {
   nps: SessionNPS;                            // NPS
   average_scores: AverageScoreItem[];         // レーダーチャート用平均点
   score_distributions: ScoreDistributions;    // 評価分布（ヒストグラム用）
-  priority_comments: CommentItem[];           // 重要コメント（importance=high）
+  fix_difficulty: { easy: number; hard: number }; // 修正難易度別件数
+  priority_comments: CommentItem[];           // 重要コメント（meeting_priority=1）
   comments: CommentItem[];                    // 全コメント
 }
 
