@@ -17,7 +17,7 @@ interface CourseDashboardProps {
 
 // UI表示用の分析タイプ（日本語）
 export type AnalysisTypeLabel = '速報版' | '確定版';
-export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
+export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '教員' | 'その他/不明';
 
 export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSessions, allCourses }: CourseDashboardProps) {
   const [analysisType, setAnalysisType] = useState<AnalysisTypeLabel>('確定版');
@@ -70,12 +70,13 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
               </p>
             </div>
             <Tabs value={studentAttribute} onValueChange={(value) => setStudentAttribute(value as StudentAttributeLabel)}>
-              <TabsList className="grid w-[500px] grid-cols-5">
+              <TabsList className="grid w-[600px] grid-cols-6">
                 <TabsTrigger value="全体">全体</TabsTrigger>
                 <TabsTrigger value="学生">学生</TabsTrigger>
                 <TabsTrigger value="会員企業">会員企業</TabsTrigger>
                 <TabsTrigger value="招待枠">招待枠</TabsTrigger>
-                <TabsTrigger value="不明">不明</TabsTrigger>
+                <TabsTrigger value="教員">教員</TabsTrigger>
+                <TabsTrigger value="その他/不明">その他/不明</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

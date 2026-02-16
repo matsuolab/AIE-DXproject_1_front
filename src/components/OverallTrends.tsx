@@ -22,7 +22,7 @@ import {
 } from '../types/api';
 
 export type AnalysisTypeLabel = '速報版' | '確定版';
-export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '不明';
+export type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '教員' | 'その他/不明';
 
 interface OverallTrendsProps {
   courseName: string;
