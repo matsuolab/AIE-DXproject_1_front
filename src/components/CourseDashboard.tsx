@@ -34,7 +34,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
           <h1 className="text-3xl mb-2">{courseName}</h1>
           <p className="text-gray-600">{courseYearDisplay} {coursePeriod}</p>
         </div>
-        
+
         {/* データバージョン選択 - 右上に配置 */}
         <div className="flex flex-col items-end gap-1">
           <span className="text-xs text-gray-500">
@@ -42,13 +42,13 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
           </span>
           <Tabs value={analysisType} onValueChange={(value) => setAnalysisType(value as AnalysisTypeLabel)}>
             <TabsList className="grid w-[220px] grid-cols-2">
-              <TabsTrigger 
+              <TabsTrigger
                 value="速報版"
                 className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
               >
                 📊 速報版
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="確定版"
                 className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
@@ -70,7 +70,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
               </p>
             </div>
             <Tabs value={studentAttribute} onValueChange={(value) => setStudentAttribute(value as StudentAttributeLabel)}>
-              <TabsList className="grid w-[600px] grid-cols-6">
+              <TabsList className="inline-flex flex-row flex-nowrap">
                 <TabsTrigger value="全体">全体</TabsTrigger>
                 <TabsTrigger value="学生">学生</TabsTrigger>
                 <TabsTrigger value="会員企業">会員企業</TabsTrigger>
