@@ -168,6 +168,7 @@ export function CourseDashboard({ courseName, courseYear, coursePeriod, courseSe
               currentPeriod={coursePeriod}
               allCourses={allCourses}
               analysisType={analysisType}
+              studentAttribute={studentAttribute}
             />
           </div>
         )}
