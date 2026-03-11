@@ -103,15 +103,36 @@ async function fetchApi<T>(
       // JSONパース失敗時はデフォルトエラー
     }
 
+    const defaultMessage = getDefaultErrorMessage(response.status);
     throw new ApiError(
       response.status,
       errorData?.error?.code || 'UNKNOWN_ERROR',
-      errorData?.error?.message || `APIエラー: ${response.status}`,
+      errorData?.error?.message || defaultMessage,
       errorData?.error?.details
     );
   }
 
   return response.json();
+}
+
+// ステータスコード別のデフォルトエラーメッセージ
+function getDefaultErrorMessage(status: number): string {
+  switch (status) {
+  case 400:
+    return 'リクエストの内容に問題があります。入力内容をご確認ください。';
+  case 403:
+    return 'この操作を実行する権限がありません。';
+  case 404:
+    return '指定されたデータが見つかりませんでした。';
+  case 500:
+    return 'サーバーとの通信中にエラーが発生しました。バックエンドAPIが正しく設定されているかご確認ください。現在はダミーデータを表示しています。';
+  case 502:
+  case 503:
+  case 504:
+    return 'サーバーに接続できませんでした。しばらく経ってから再度お試しください。';
+  default:
+    return `サーバーとの通信中に予期しないエラーが発生しました（コード: ${status}）。`;
+  }
 }
 
 // multipart/form-data用のfetch（ファイルアップロード）
@@ -149,10 +170,11 @@ async function fetchApiMultipart<T>(
       // JSONパース失敗時はデフォルトエラー
     }
 
+    const defaultMessage = getDefaultErrorMessage(response.status);
     throw new ApiError(
       response.status,
       errorData?.error?.code || 'UNKNOWN_ERROR',
-      errorData?.error?.message || `APIエラー: ${response.status}`,
+      errorData?.error?.message || defaultMessage,
       errorData?.error?.details
     );
   }
