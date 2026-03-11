@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle, GitCompareArrows, Award, BarChart3, ClipboardList } from 'lucide-react';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
 import { fetchYearComparison } from '../api/client';
 import { getDummyYearComparison } from '../data/dummy';
@@ -121,7 +121,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
       {/* 比較年度選択 */}
       <Card className="border border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-slate-800">年度比較</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <GitCompareArrows className="h-5 w-5 text-blue-600" />
+            年度比較
+          </CardTitle>
           <CardDescription>
             他の年度と比較して、講座の改善傾向や課題を分析できます
           </CardDescription>
@@ -203,7 +206,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           {/* 総合指標の比較 */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">総合指標の比較</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Award className="h-5 w-5 text-blue-600" />
+                総合指標の比較
+              </CardTitle>
               <CardDescription>主要な指標を年度間で比較</CardDescription>
             </CardHeader>
             <CardContent>
@@ -340,7 +346,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           {/* NPS推移の比較 */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">NPS推移の年度比較</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                NPS推移の年度比較
+              </CardTitle>
               <CardDescription>講義回ごとのNPSスコアの推移を比較</CardDescription>
             </CardHeader>
             <CardContent>
@@ -376,7 +385,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           {/* カテゴリ別平均スコアの比較 */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">カテゴリ別平均スコアの比較</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                カテゴリ別平均スコアの比較
+              </CardTitle>
               <CardDescription>各評価項目の年度間比較</CardDescription>
             </CardHeader>
             <CardContent>
@@ -397,7 +409,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           {/* 改善点と課題 */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">年度比較サマリー</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <ClipboardList className="h-5 w-5 text-blue-600" />
+                年度比較サマリー
+              </CardTitle>
               <CardDescription>主な改善点と課題</CardDescription>
             </CardHeader>
             <CardContent>
