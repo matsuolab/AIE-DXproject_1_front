@@ -368,74 +368,134 @@ export function getDummySessionAnalysis(lectureId: number): SessionAnalysisRespo
 
 // ===== 年度比較 =====
 
-export const dummyYearComparison: YearComparisonResponse = {
-  current: {
-    academic_year: 2024,
-    term: '10月～12月',
-    total_responses: 231,
-    session_count: 6,
-    average_nps: 28.5,
-    average_scores: {
-      overall_satisfaction: 4.15,
-      learning_amount: 3.85,
-      comprehension: 3.95,
-      operations: 4.17,
-      instructor_satisfaction: 4.35,
-      time_management: 4.08,
-      question_handling: 4.03,
-      speaking_style: 4.25,
-      preparation: 3.42,
-      motivation: 4.13,
-      future_application: 3.85,
-    },
-  },
-  comparison: {
-    academic_year: 2023,
-    term: '10月～12月',
-    total_responses: 198,
-    session_count: 5,
-    average_nps: 18.2,
-    average_scores: {
-      overall_satisfaction: 3.85,
-      learning_amount: 3.60,
-      comprehension: 3.70,
-      operations: 3.90,
-      instructor_satisfaction: 4.10,
-      time_management: 3.80,
-      question_handling: 3.75,
-      speaking_style: 4.00,
-      preparation: 3.30,
-      motivation: 3.90,
-      future_application: 3.60,
-    },
-  },
-  nps_trends: {
-    current: [
-      { session: '第1回', nps_score: 20.0 },
-      { session: '第2回', nps_score: 22.5 },
-      { session: '第3回', nps_score: 30.0 },
-      { session: '第4回', nps_score: 25.0 },
-      { session: '第5回', nps_score: 35.0 },
-    ],
-    comparison: [
-      { session: '第1回', nps_score: 15.0 },
-      { session: '第2回', nps_score: 12.0 },
-      { session: '第3回', nps_score: 18.0 },
-      { session: '第4回', nps_score: 20.0 },
-      { session: '第5回', nps_score: 25.0 },
-    ],
-  },
-  score_comparison: [
-    { category: '総合満足度', category_key: 'overall_satisfaction', current_score: 4.15, comparison_score: 3.85, difference: 0.30 },
-    { category: '学習量', category_key: 'learning_amount', current_score: 3.85, comparison_score: 3.60, difference: 0.25 },
-    { category: '理解度', category_key: 'comprehension', current_score: 3.95, comparison_score: 3.70, difference: 0.25 },
-    { category: '運営', category_key: 'operations', current_score: 4.17, comparison_score: 3.90, difference: 0.27 },
-    { category: '講師満足度', category_key: 'instructor_satisfaction', current_score: 4.35, comparison_score: 4.10, difference: 0.25 },
-    { category: '時間の使い方', category_key: 'time_management', current_score: 4.08, comparison_score: 3.80, difference: 0.28 },
-    { category: '質問対応', category_key: 'question_handling', current_score: 4.03, comparison_score: 3.75, difference: 0.28 },
-    { category: '話し方', category_key: 'speaking_style', current_score: 4.25, comparison_score: 4.00, difference: 0.25 },
-    { category: '予習', category_key: 'preparation', current_score: 3.42, comparison_score: 3.30, difference: 0.12 },
-    { category: '意欲', category_key: 'motivation', current_score: 4.13, comparison_score: 3.90, difference: 0.23 },
-    { category: '今後への活用', category_key: 'future_application', current_score: 3.85, comparison_score: 3.60, difference: 0.25 },
-  ],
+// 属性ごとのスコア補正値
+const attributeOffsets: Record<string, { responses: number; nps: number; score: number }> = {
+  '全体':       { responses: 0,    nps: 0,    score: 0 },
+  '学生':       { responses: -80,  nps: 5.0,  score: 0.10 },
+  '会員企業':   { responses: -100, nps: -3.0, score: -0.05 },
+  '招待枠':     { responses: -170, nps: 8.0,  score: 0.15 },
+  '教員':       { responses: -210, nps: 12.0, score: 0.20 },
+  'その他/不明': { responses: -215, nps: -5.0, score: -0.10 },
 };
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function applyOffset(
+  scores: YearComparisonResponse['current']['average_scores'],
+  offset: number,
+): YearComparisonResponse['current']['average_scores'] {
+  return {
+    overall_satisfaction: round2(scores.overall_satisfaction + offset),
+    learning_amount: round2(scores.learning_amount + offset),
+    comprehension: round2(scores.comprehension + offset),
+    operations: round2(scores.operations + offset),
+    instructor_satisfaction: round2(scores.instructor_satisfaction + offset),
+    time_management: round2(scores.time_management + offset),
+    question_handling: round2(scores.question_handling + offset),
+    speaking_style: round2(scores.speaking_style + offset),
+    preparation: round2(scores.preparation + offset),
+    motivation: round2(scores.motivation + offset),
+    future_application: round2(scores.future_application + offset),
+  };
+}
+
+export function getDummyYearComparison(
+  studentAttribute: string = '全体',
+): YearComparisonResponse {
+  const offset = attributeOffsets[studentAttribute] || attributeOffsets['全体'];
+
+  const baseCurrentScores = {
+    overall_satisfaction: 4.15,
+    learning_amount: 3.85,
+    comprehension: 3.95,
+    operations: 4.17,
+    instructor_satisfaction: 4.35,
+    time_management: 4.08,
+    question_handling: 4.03,
+    speaking_style: 4.25,
+    preparation: 3.42,
+    motivation: 4.13,
+    future_application: 3.85,
+  };
+
+  const baseComparisonScores = {
+    overall_satisfaction: 3.85,
+    learning_amount: 3.60,
+    comprehension: 3.70,
+    operations: 3.90,
+    instructor_satisfaction: 4.10,
+    time_management: 3.80,
+    question_handling: 3.75,
+    speaking_style: 4.00,
+    preparation: 3.30,
+    motivation: 3.90,
+    future_application: 3.60,
+  };
+
+  const currentScores = applyOffset(baseCurrentScores, offset.score);
+  const comparisonScores = applyOffset(baseComparisonScores, offset.score);
+
+  const currentNps = round2(28.5 + offset.nps);
+  const comparisonNps = round2(18.2 + offset.nps);
+  const npsOffset = offset.nps;
+
+  return {
+    current: {
+      academic_year: 2024,
+      term: '10月～12月',
+      total_responses: Math.max(10, 231 + offset.responses),
+      session_count: 6,
+      average_nps: currentNps,
+      average_scores: currentScores,
+    },
+    comparison: {
+      academic_year: 2023,
+      term: '10月～12月',
+      total_responses: Math.max(8, 198 + offset.responses),
+      session_count: 5,
+      average_nps: comparisonNps,
+      average_scores: comparisonScores,
+    },
+    nps_trends: {
+      current: [
+        { session: '第1回', nps_score: round2(20.0 + npsOffset) },
+        { session: '第2回', nps_score: round2(22.5 + npsOffset) },
+        { session: '第3回', nps_score: round2(30.0 + npsOffset) },
+        { session: '第4回', nps_score: round2(25.0 + npsOffset) },
+        { session: '第5回', nps_score: round2(35.0 + npsOffset) },
+      ],
+      comparison: [
+        { session: '第1回', nps_score: round2(15.0 + npsOffset) },
+        { session: '第2回', nps_score: round2(12.0 + npsOffset) },
+        { session: '第3回', nps_score: round2(18.0 + npsOffset) },
+        { session: '第4回', nps_score: round2(20.0 + npsOffset) },
+        { session: '第5回', nps_score: round2(25.0 + npsOffset) },
+      ],
+    },
+    score_comparison: Object.keys(currentScores).map(key => {
+      const k = key as keyof typeof currentScores;
+      const labels: Record<string, string> = {
+        overall_satisfaction: '総合満足度',
+        learning_amount: '学習量',
+        comprehension: '理解度',
+        operations: '運営',
+        instructor_satisfaction: '講師満足度',
+        time_management: '時間の使い方',
+        question_handling: '質問対応',
+        speaking_style: '話し方',
+        preparation: '予習',
+        motivation: '意欲',
+        future_application: '今後への活用',
+      };
+      return {
+        category: labels[k] || k,
+        category_key: k,
+        current_score: currentScores[k],
+        comparison_score: comparisonScores[k],
+        difference: round2(currentScores[k] - comparisonScores[k]),
+      };
+    }),
+  };
+}

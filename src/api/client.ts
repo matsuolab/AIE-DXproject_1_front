@@ -280,6 +280,7 @@ export async function fetchYearComparison(params: {
   compare_year: number;
   compare_term: string;
   batch_type: AnalysisType;
+  student_attribute?: StudentAttribute;
 }): Promise<YearComparisonResponse> {
   const searchParams = new URLSearchParams({
     name: params.name,
@@ -289,6 +290,9 @@ export async function fetchYearComparison(params: {
     compare_term: params.compare_term,
     batch_type: params.batch_type,
   });
+  if (params.student_attribute) {
+    searchParams.append('student_attribute', params.student_attribute);
+  }
 
   return fetchApi<YearComparisonResponse>(`/courses/compare?${searchParams}`);
 }

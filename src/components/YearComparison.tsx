@@ -6,12 +6,13 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle } from 'lucide-react';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
 import { fetchYearComparison } from '../api/client';
-import { dummyYearComparison } from '../data/dummy';
+import { getDummyYearComparison } from '../data/dummy';
 import type { CourseItem, YearComparisonResponse } from '../types/api';
-import { AnalysisTypeFromLabel } from '../types/api';
+import { AnalysisTypeFromLabel, StudentAttributeFromLabel } from '../types/api';
 
 // UI表示用の型
 type AnalysisTypeLabel = '速報版' | '確定版';
+type StudentAttributeLabel = '全体' | '学生' | '会員企業' | '招待枠' | '教員' | 'その他/不明';
 
 interface YearComparisonProps {
   currentCourseName: string;
@@ -19,9 +20,10 @@ interface YearComparisonProps {
   currentPeriod: string;
   allCourses: CourseItem[];
   analysisType: AnalysisTypeLabel;
+  studentAttribute: StudentAttributeLabel;
 }
 
-export function YearComparison({ currentCourseName, currentYear, currentPeriod, allCourses, analysisType }: YearComparisonProps) {
+export function YearComparison({ currentCourseName, currentYear, currentPeriod, allCourses, analysisType, studentAttribute }: YearComparisonProps) {
   const [comparisonYear, setComparisonYear] = useState('');
   const [comparisonPeriod, setComparisonPeriod] = useState('');
   const [data, setData] = useState<YearComparisonResponse | null>(null);
@@ -45,6 +47,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
     setError(null);
     try {
       const apiAnalysisType = AnalysisTypeFromLabel[analysisType];
+      const apiAttribute = StudentAttributeFromLabel[studentAttribute] || 'all';
       const comparisonYearNum = parseAcademicYear(comparisonYear);
 
       const response = await fetchYearComparison({
@@ -54,16 +57,17 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
         compare_year: comparisonYearNum,
         compare_term: comparisonPeriod,
         batch_type: apiAnalysisType,
+        student_attribute: apiAttribute,
       });
       setData(response);
     } catch {
       // API接続失敗時はダミーデータで表示
-      setData(dummyYearComparison);
+      setData(getDummyYearComparison(studentAttribute));
       setError(null);
     } finally {
       setIsLoading(false);
     }
-  }, [currentCourseName, currentYear, currentPeriod, comparisonYear, comparisonPeriod, analysisType]);
+  }, [currentCourseName, currentYear, currentPeriod, comparisonYear, comparisonPeriod, analysisType, studentAttribute]);
 
   useEffect(() => {
     loadData();
