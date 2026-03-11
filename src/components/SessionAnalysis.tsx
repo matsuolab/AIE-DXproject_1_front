@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { AlertCircle, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2 } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, Award, Radar as RadarIcon, BarChart3, PieChart as PieChartIcon, List } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { fetchSessionAnalysis } from '../api/client';
 import { getDummySessionAnalysis } from '../data/dummy';
@@ -220,7 +220,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       {/* 講義回セレクター */}
       <Card className="border border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-slate-800">{selectedSession?.session || '講義回を選択'}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <BookOpen className="h-5 w-5 text-blue-600" />
+            {selectedSession?.session || '講義回を選択'}
+          </CardTitle>
           <CardDescription>分析したい講義回を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
@@ -307,7 +310,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           {/* 当該回の評価詳細 */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">NPSと評価内訳</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Award className="h-5 w-5 text-blue-600" />
+                NPSと評価内訳
+              </CardTitle>
               <CardDescription>この講義回のNPSスコアと分類</CardDescription>
             </CardHeader>
             <CardContent>
@@ -354,7 +360,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           {/* 当該回の平均点一覧（レーダーチャート） */}
           <Card className="border border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-slate-800">全項目の平均点（レーダーチャート）</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <RadarIcon className="h-5 w-5 text-blue-600" />
+                全項目の平均点（レーダーチャート）
+              </CardTitle>
               <CardDescription>各評価項目の5点満点での平均スコア</CardDescription>
             </CardHeader>
             <CardContent>
@@ -383,7 +392,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       {selectedLectureId && data && !isLoading && (
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">評価分布詳細</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              評価分布詳細
+            </CardTitle>
             <CardDescription>主要項目の段階評価分布（5点満点）</CardDescription>
           </CardHeader>
           <CardContent>
@@ -605,7 +617,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       {selectedLectureId && data && !isLoading && (
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">コメント分析サマリー</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <PieChartIcon className="h-5 w-5 text-blue-600" />
+              コメント分析サマリー
+            </CardTitle>
             <CardDescription>全{allComments.length}件のコメントの分布状況</CardDescription>
           </CardHeader>
           <CardContent>
@@ -740,7 +755,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       {selectedLectureId && data && !isLoading && (
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">コメント一覧</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <List className="h-5 w-5 text-blue-600" />
+              コメント一覧
+            </CardTitle>
             <CardDescription>フィルタリングして表示</CardDescription>
           </CardHeader>
           <CardContent>

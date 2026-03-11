@@ -540,7 +540,12 @@ export function DataUpload({ onComplete, existingCourses }: DataUploadProps) {
                     >
                       既存講座にデータ追加
                     </TabsTrigger>
-                    <TabsTrigger value="new">新規講座</TabsTrigger>
+                    <TabsTrigger
+                      value="new"
+                      className="data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-md"
+                    >
+                      新規講座
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>

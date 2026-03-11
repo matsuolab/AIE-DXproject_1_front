@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, AlertCircle, RefreshCw, Users, Video, BarChart3, MessageSquare, Tag, Award } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
@@ -46,13 +46,13 @@ const evaluationItemGroups = [
     items: [
       { key: 'learning_amount', label: '講義内容の学習量', color: '#8b5cf6' },
       { key: 'comprehension', label: '講義内容の理解度', color: '#ec4899' },
-      { key: 'operations', label: '講義中の運営アナウンス', color: '#f59e0b' },
+      { key: 'operations', label: '講義中の運営アナウンス', color: '#10b981' },
     ]
   },
   {
     groupName: '講師評価',
     items: [
-      { key: 'instructor_satisfaction', label: '講師の総合的な満足度', color: '#10b981' },
+      { key: 'instructor_satisfaction', label: '講師の総合的な満足度', color: '#f59e0b' },
       { key: 'time_management', label: '講師の授業時間の使い方', color: '#06b6d4' },
       { key: 'question_handling', label: '講師の質問対応', color: '#6366f1' },
       { key: 'speaking_style', label: '講師の話し方', color: '#f43f5e' },
@@ -191,7 +191,7 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
   const sentimentData = sentiment_summary.map(item => ({
     name: SentimentLabelMap[item.sentiment],
     value: item.percentage,
-    color: item.sentiment === 'positive' ? '#22c55e' : item.sentiment === 'negative' ? '#ef4444' : '#94a3b8',
+    color: item.sentiment === 'positive' ? '#3b82f6' : item.sentiment === 'negative' ? '#ef4444' : '#22c55e',
   }));
 
   // カテゴリ別コメント数を変換
@@ -252,88 +252,97 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
         </CardContent>
       </Card>
 
-      {/* 回答数と継続率の推移 */}
-      <Card className="border border-slate-200 shadow-sm">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-slate-800">回答数と継続率の推移</CardTitle>
-          <CardDescription>各講義回のアンケート回答数と1回目を基準とした回答継続率</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={responseRetentionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="session" />
-              <YAxis yAxisId="left" domain={[0, firstSessionResponses]} />
-              <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
-              <Tooltip
-                formatter={(value, name) => {
-                  if (name === '継続率') {
-                    return `${value}%`;
-                  }
-                  return value;
-                }}
-              />
-              <Legend />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="responses"
-                stroke="#3b82f6"
-                name="回答数"
-                strokeWidth={2}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="retentionRate"
-                stroke="#22c55e"
-                name="継続率"
-                strokeWidth={2}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Zoom参加者数の推移（速報版）/ 録画視聴回数の推移（確定版） - 全体の時のみ表示 */}
-      {studentAttribute === '全体' && participationData.length > 0 && (
+      {/* 回答数と継続率の推移 & Zoom参加者数/録画視聴回数の推移 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">
-              {analysisType === '速報版' ? 'Zoom参加者数の推移' : '録画視聴回数の推移'}
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Users className="h-5 w-5 text-blue-600" />
+              回答数と継続率の推移
             </CardTitle>
-            <CardDescription>
-              {analysisType === '速報版'
-                ? '各講義回のZoom参加者数'
-                : '各講義回の録画視聴回数'}
-            </CardDescription>
+            <CardDescription>各講義回のアンケート回答数と1回目を基準とした回答継続率</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={participationData}>
+              <ComposedChart data={responseRetentionData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="session" />
-                <YAxis />
-                <Tooltip />
+                <YAxis yAxisId="left" domain={[0, firstSessionResponses]} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === '継続率') {
+                      return `${value}%`;
+                    }
+                    return value;
+                  }}
+                />
                 <Legend />
                 <Line
+                  yAxisId="left"
                   type="monotone"
-                  dataKey={analysisType === '速報版' ? 'participants' : 'views'}
-                  stroke={analysisType === '速報版' ? '#3b82f6' : '#22c55e'}
-                  name={analysisType === '速報版' ? 'Zoom参加者数' : '録画視聴回数'}
+                  dataKey="responses"
+                  stroke="#3b82f6"
+                  name="回答数"
                   strokeWidth={2}
                 />
-              </LineChart>
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="retentionRate"
+                  stroke="#22c55e"
+                  name="継続率"
+                  strokeWidth={2}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      )}
+
+        {/* Zoom参加者数の推移（速報版）/ 録画視聴回数の推移（確定版） - 全体の時のみ表示 */}
+        {studentAttribute === '全体' && participationData.length > 0 && (
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Video className="h-5 w-5 text-blue-600" />
+                {analysisType === '速報版' ? 'Zoom参加者数の推移' : '録画視聴回数の推移'}
+              </CardTitle>
+              <CardDescription>
+                {analysisType === '速報版'
+                  ? '各講義回のZoom参加者数'
+                  : '各講義回の録画視聴回数'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={participationData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="session" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey={analysisType === '速報版' ? 'participants' : 'views'}
+                    stroke={analysisType === '速報版' ? '#3b82f6' : '#22c55e'}
+                    name={analysisType === '速報版' ? 'Zoom参加者数' : '録画視聴回数'}
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* NPS（推奨度）サマリー */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className={`${npsBorderColor} border shadow-sm`}>
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">講座全体のNPSスコア</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Award className="h-5 w-5 text-blue-600" />
+              講座全体のNPSスコア
+            </CardTitle>
             <CardDescription>Net Promoter Score（推奨者比率）</CardDescription>
           </CardHeader>
           <CardContent>
@@ -375,7 +384,10 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
         {/* NPS推移グラフ */}
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">NPS推移</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              NPS推移
+            </CardTitle>
             <CardDescription>各講義回のNPSスコア推移</CardDescription>
           </CardHeader>
           <CardContent>
@@ -399,10 +411,49 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
         </Card>
       </div>
 
+      {/* 全体を通しての平均点 */}
+      <Card className="border border-slate-200 shadow-sm">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            全体を通しての平均点
+          </CardTitle>
+          <CardDescription>全期間の評価項目別平均点（5点満点）</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.entries(overall_averages).map(([key, category]) => (
+              <div key={key} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">{category.label}</h3>
+                <div className="space-y-3">
+                  {category.items.map((item: ScoreItem, index: number) => (
+                    <div key={index}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-gray-600">{item.name}</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {item.score.toFixed(2)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={(item.score / 5) * 100}
+                        className="h-2"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 各回の平均点推移 */}
       <Card className="border border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-slate-800">各回の平均点推移</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            各回の平均点推移
+          </CardTitle>
           <CardDescription>評価項目の推移（5点満点）- 表示したい項目を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
@@ -465,45 +516,15 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
         </CardContent>
       </Card>
 
-      {/* 全体を通しての平均点 */}
-      <Card className="border border-slate-200 shadow-sm">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-slate-800">全体を通しての平均点</CardTitle>
-          <CardDescription>全期間の評価項目別平均点（5点満点）</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(overall_averages).map(([key, category]) => (
-              <div key={key} className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2">{category.label}</h3>
-                <div className="space-y-3">
-                  {category.items.map((item: ScoreItem, index: number) => (
-                    <div key={index}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-gray-600">{item.name}</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {item.score.toFixed(2)}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(item.score / 5) * 100}
-                        className="h-2"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* コメントの全体傾向 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* コメントのネガポジ比率 */}
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">コメント感情分析</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+              コメント感情分析
+            </CardTitle>
             <CardDescription>全コメントのネガポジ比率</CardDescription>
           </CardHeader>
           <CardContent>
@@ -532,7 +553,10 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
         {/* カテゴリ別コメント数 */}
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-slate-800">カテゴリ別コメント数</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Tag className="h-5 w-5 text-blue-600" />
+              カテゴリ別コメント数
+            </CardTitle>
             <CardDescription>コメントの分類結果</CardDescription>
           </CardHeader>
           <CardContent>
@@ -542,7 +566,7 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
                 <XAxis type="number" />
                 <YAxis dataKey="category" type="category" width={100} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8b5cf6" />
+                <Bar dataKey="count" fill="#94a3b8" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
