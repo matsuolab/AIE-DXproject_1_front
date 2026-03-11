@@ -6,6 +6,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle } from 'lucide-react';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
 import { fetchYearComparison } from '../api/client';
+import { dummyYearComparison } from '../data/dummy';
 import type { CourseItem, YearComparisonResponse } from '../types/api';
 import { AnalysisTypeFromLabel } from '../types/api';
 
@@ -55,10 +56,10 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
         batch_type: apiAnalysisType,
       });
       setData(response);
-    } catch (err) {
-      console.error('Failed to fetch year comparison:', err);
-      setError('比較データの取得に失敗しました');
-      setData(null);
+    } catch {
+      // API接続失敗時はダミーデータで表示
+      setData(dummyYearComparison);
+      setError(null);
     } finally {
       setIsLoading(false);
     }
@@ -114,9 +115,9 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
   return (
     <div className="space-y-6">
       {/* 比較年度選択 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>年度比較</CardTitle>
+      <Card className="border border-slate-200 shadow-sm">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="text-slate-800">年度比較</CardTitle>
           <CardDescription>
             他の年度と比較して、講座の改善傾向や課題を分析できます
           </CardDescription>
@@ -196,19 +197,19 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
       {comparisonYear && comparisonPeriod && data && !isLoading && (
         <>
           {/* 総合指標の比較 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>総合指標の比較</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">総合指標の比較</CardTitle>
               <CardDescription>主要な指標を年度間で比較</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 平均NPS */}
-                <Card className="bg-gray-50">
+                <Card className="bg-slate-50/80 border-slate-200">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">平均NPS</p>
-                      <p className="text-2xl mb-1">{data.current.average_nps.toFixed(1)}</p>
+                      <p className="text-sm text-slate-500 mb-2">平均NPS</p>
+                      <p className="text-2xl font-bold tabular-nums text-slate-800 mb-1">{data.current.average_nps.toFixed(1)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
                           const diff = calculateDifference(data.current.average_nps, data.comparison.average_nps);
@@ -234,11 +235,11 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                 </Card>
 
                 {/* 総合満足度 */}
-                <Card className="bg-gray-50">
+                <Card className="bg-slate-50/80 border-slate-200">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">総合満足度</p>
-                      <p className="text-2xl mb-1">{data.current.average_scores.overall_satisfaction.toFixed(2)}</p>
+                      <p className="text-sm text-slate-500 mb-2">総合満足度</p>
+                      <p className="text-2xl font-bold tabular-nums text-slate-800 mb-1">{data.current.average_scores.overall_satisfaction.toFixed(2)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
                           const diff = calculateDifference(
@@ -267,11 +268,11 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                 </Card>
 
                 {/* 講師満足度 */}
-                <Card className="bg-gray-50">
+                <Card className="bg-slate-50/80 border-slate-200">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">講師満足度</p>
-                      <p className="text-2xl mb-1">{data.current.average_scores.instructor_satisfaction.toFixed(2)}</p>
+                      <p className="text-sm text-slate-500 mb-2">講師満足度</p>
+                      <p className="text-2xl font-bold tabular-nums text-slate-800 mb-1">{data.current.average_scores.instructor_satisfaction.toFixed(2)}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
                           const diff = calculateDifference(
@@ -300,11 +301,11 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                 </Card>
 
                 {/* 総回答数 */}
-                <Card className="bg-gray-50">
+                <Card className="bg-slate-50/80 border-slate-200">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">総回答数</p>
-                      <p className="text-2xl mb-1">{data.current.total_responses}</p>
+                      <p className="text-sm text-slate-500 mb-2">総回答数</p>
+                      <p className="text-2xl font-bold tabular-nums text-slate-800 mb-1">{data.current.total_responses}</p>
                       <div className="flex items-center justify-center gap-1 text-sm">
                         {(() => {
                           const diff = calculateDifference(data.current.total_responses, data.comparison.total_responses);
@@ -333,9 +334,9 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           </Card>
 
           {/* NPS推移の比較 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>NPS推移の年度比較</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">NPS推移の年度比較</CardTitle>
               <CardDescription>講義回ごとのNPSスコアの推移を比較</CardDescription>
             </CardHeader>
             <CardContent>
@@ -369,9 +370,9 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           </Card>
 
           {/* カテゴリ別平均スコアの比較 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>カテゴリ別平均スコアの比較</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">カテゴリ別平均スコアの比較</CardTitle>
               <CardDescription>各評価項目の年度間比較</CardDescription>
             </CardHeader>
             <CardContent>
@@ -390,9 +391,9 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
           </Card>
 
           {/* 改善点と課題 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>年度比較サマリー</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">年度比較サマリー</CardTitle>
               <CardDescription>主な改善点と課題</CardDescription>
             </CardHeader>
             <CardContent>

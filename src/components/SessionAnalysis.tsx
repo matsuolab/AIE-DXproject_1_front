@@ -5,9 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { AlertCircle, ThumbsUp, ThumbsDown, Minus, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2 } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { fetchSessionAnalysis } from '../api/client';
+import { getDummySessionAnalysis } from '../data/dummy';
 import type {
   SessionSummary,
   SessionAnalysisResponse,
@@ -76,10 +77,10 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         student_attribute: apiAttribute === 'all' ? undefined : apiAttribute,
       });
       setData(response);
-    } catch (err) {
-      console.error('Failed to fetch session analysis:', err);
-      setError('データの取得に失敗しました');
-      setData(null);
+    } catch {
+      // API接続失敗時はダミーデータで表示
+      setData(getDummySessionAnalysis(selectedLectureId));
+      setError(null);
     } finally {
       setIsLoading(false);
     }
@@ -155,66 +156,53 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const npsColor = npsScore >= 0 ? 'text-green-600' : 'text-red-600';
   const npsBgColor = npsScore >= 0 ? 'bg-green-50' : 'bg-red-50';
 
-  const getSentimentIcon = (sentiment: Sentiment | null) => {
-    switch (sentiment) {
-    case 'positive':
-      return <ThumbsUp className="h-4 w-4 text-green-600" />;
-    case 'negative':
-      return <ThumbsDown className="h-4 w-4 text-red-600" />;
-    default:
-      return <Minus className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  interface BadgeConfig {
-    variant: 'default' | 'secondary' | 'outline';
-    className?: string;
-  }
 
   const getSentimentBadge = (sentiment: Sentiment | null) => {
     if (!sentiment) {
       return <Badge variant="secondary">未分析</Badge>;
     }
-    const variants: Record<Sentiment, BadgeConfig> = {
-      positive: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
-      negative: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
-      neutral: { variant: 'secondary', className: '' },
+    const styles: Record<Sentiment, { bg: string; color: string }> = {
+      positive: { bg: '#dbeafe', color: '#1e40af' },
+      neutral: { bg: '#dcfce7', color: '#166534' },
+      negative: { bg: '#fee2e2', color: '#991b1b' },
     };
-    const config = variants[sentiment];
-    return <Badge {...config}>{SentimentLabels[sentiment]}</Badge>;
+    const style = styles[sentiment];
+    return <Badge variant="default" style={{ backgroundColor: style.bg, color: style.color }}>{SentimentLabels[sentiment]}</Badge>;
   };
 
   const getCategoryBadge = (category: CommentCategory | null) => {
     if (!category) {
       return <Badge variant="outline">未分類</Badge>;
     }
-    return <Badge variant="outline">{CommentCategoryLabels[category]}</Badge>;
+    return <Badge variant="secondary">{CommentCategoryLabels[category]}</Badge>;
   };
 
   const getImportanceBadge = (importance: Importance | null) => {
     if (!importance) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    const variants: Record<Importance, BadgeConfig> = {
-      high: { variant: 'default', className: 'bg-orange-100 text-orange-800 hover:bg-orange-100' },
-      medium: { variant: 'default', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' },
-      low: { variant: 'default', className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' },
+    const styles: Record<Importance, { bg: string; color: string }> = {
+      high: { bg: '#fee2e2', color: '#991b1b' },
+      medium: { bg: '#dcfce7', color: '#166534' },
+      low: { bg: '#dbeafe', color: '#1e40af' },
     };
-    const config = variants[importance];
-    return <Badge {...config}>{ImportanceLabels[importance]}</Badge>;
+    const style = styles[importance];
+    return <Badge variant="default" style={{ backgroundColor: style.bg, color: style.color }}>{ImportanceLabels[importance]}</Badge>;
   };
 
   const getFixDifficultyBadge = (fixDifficulty: FixDifficulty | null) => {
     if (!fixDifficulty) {
       return <Badge variant="outline">未判定</Badge>;
     }
-    const variants: Record<FixDifficulty, BadgeConfig> = {
-      easy: { variant: 'default', className: 'bg-green-100 text-green-800 hover:bg-green-100' },
-      hard: { variant: 'default', className: 'bg-red-100 text-red-800 hover:bg-red-100' },
-      none: { variant: 'default', className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' },
+    if (fixDifficulty === 'none') {
+      return <Badge variant="secondary">{FixDifficultyLabels[fixDifficulty]}</Badge>;
+    }
+    const styles: Record<string, { bg: string; color: string }> = {
+      easy: { bg: '#dbeafe', color: '#1e40af' },
+      hard: { bg: '#fee2e2', color: '#991b1b' },
     };
-    const config = variants[fixDifficulty];
-    return <Badge {...config}>{FixDifficultyLabels[fixDifficulty]}</Badge>;
+    const style = styles[fixDifficulty];
+    return <Badge variant="default" style={{ backgroundColor: style.bg, color: style.color }}>{FixDifficultyLabels[fixDifficulty]}</Badge>;
   };
 
   const getIsAbusiveBadge = (isAbusive: boolean | null) => {
@@ -224,15 +212,15 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
     if (isAbusive) {
       return <Badge variant="default" className="bg-red-100 text-red-800 hover:bg-red-100">要注意</Badge>;
     }
-    return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">安全</Badge>;
+    return <Badge variant="default" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>安全</Badge>;
   };
 
   return (
     <div className="space-y-6">
       {/* 講義回セレクター */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{selectedSession?.session || '講義回を選択'}</CardTitle>
+      <Card className="border border-slate-200 shadow-sm">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="text-slate-800">{selectedSession?.session || '講義回を選択'}</CardTitle>
           <CardDescription>分析したい講義回を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
@@ -288,16 +276,6 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         </CardContent>
       </Card>
 
-      {/* 講義回が選択されていない場合のメッセージ */}
-      {!selectedLectureId && (
-        <Card>
-          <CardContent className="py-12">
-            <p className="text-center text-gray-500">
-              講義回を選択すると、詳細な分析結果が表示されます
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ローディング */}
       {isLoading && (
@@ -327,9 +305,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       {selectedLectureId && data && !isLoading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 当該回の評価詳細 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>NPSと評価内訳</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">NPSと評価内訳</CardTitle>
               <CardDescription>この講義回のNPSスコアと分類</CardDescription>
             </CardHeader>
             <CardContent>
@@ -344,7 +322,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                       ) : (
                         <TrendingDown className={`h-6 w-6 ${npsColor}`} />
                       )}
-                      <span className={`text-4xl ${npsColor}`}>
+                      <span className={`text-4xl font-bold tabular-nums ${npsColor}`}>
                         {npsScore > 0 ? '+' : ''}{npsScore.toFixed(1)}
                       </span>
                     </div>
@@ -374,9 +352,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           </Card>
 
           {/* 当該回の平均点一覧（レーダーチャート） */}
-          <Card>
-            <CardHeader>
-              <CardTitle>全項目の平均点（レーダーチャート）</CardTitle>
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-slate-800">全項目の平均点（レーダーチャート）</CardTitle>
               <CardDescription>各評価項目の5点満点での平均スコア</CardDescription>
             </CardHeader>
             <CardContent>
@@ -403,9 +381,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
 
       {/* 評価分布詳細（主要項目） */}
       {selectedLectureId && data && !isLoading && (
-        <Card>
-          <CardHeader>
-            <CardTitle>評価分布詳細</CardTitle>
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+            <CardTitle className="text-slate-800">評価分布詳細</CardTitle>
             <CardDescription>主要項目の段階評価分布（5点満点）</CardDescription>
           </CardHeader>
           <CardContent>
@@ -579,7 +557,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         </Card>
       )}
 
-      {/* 重要コメント */}
+      {/* 早急対応コメント */}
       {selectedLectureId && data && !isLoading && (
         <Card className="border-orange-200 bg-orange-50/30">
           <CardHeader className="pb-4">
@@ -589,11 +567,12 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   <AlertCircle className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    重要コメント
-                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 text-xs">重要度：高</Badge>
+                  <CardTitle className="text-lg">
+                    早急対応コメント
                   </CardTitle>
-                  <CardDescription>優先的に確認すべきコメント</CardDescription>
+                  <CardDescription>
+                    <span style={{ color: '#ef4444' }} className="font-medium">ネガティブ</span>かつ<span className="text-slate-700 font-medium">講義資料・運営</span>に関する重要度の<span style={{ color: '#ef4444' }} className="font-medium">高い</span>コメント（修正が<span style={{ color: '#3b82f6' }} className="font-medium">容易</span>なもの）
+                  </CardDescription>
                 </div>
               </div>
               {data.priority_comments.length > 0 && (
@@ -605,127 +584,163 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           </CardHeader>
           <CardContent>
             {data.priority_comments.length > 0 ? (
-              <div className="grid gap-4">
+              <ul className="space-y-2">
                 {data.priority_comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className={`p-4 rounded-lg border-l-4 bg-white shadow-sm ${comment.sentiment === 'positive'
-                      ? 'border-l-green-500'
-                      : comment.sentiment === 'negative'
-                        ? 'border-l-red-500'
-                        : 'border-l-gray-400'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      {getSentimentIcon(comment.sentiment)}
-                      {getSentimentBadge(comment.sentiment)}
-                      {getCategoryBadge(comment.category)}
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
-                  </div>
+                  <li key={comment.id} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
+                    <span className="text-orange-500 shrink-0 mt-1.5 text-[6px]">&#9679;</span>
+                    <span>{comment.text}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <div className="text-center py-8">
-                <div className="p-3 bg-gray-100 rounded-full w-fit mx-auto mb-3">
-                  <AlertCircle className="h-6 w-6 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-500">
-                  この回には重要度の高いコメントがありません
-                </p>
-              </div>
+              <p className="text-sm text-gray-500 py-4 text-center">
+                この回には早急対応が必要なコメントはありません
+              </p>
             )}
           </CardContent>
         </Card>
       )}
 
       {/* ラベル集計表示 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>コメント分析サマリー</CardTitle>
-          <CardDescription>各ラベルの分布状況</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 感情 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">感情</h3>
-              <div className="space-y-2">
-                {Object.entries(labelStats.sentiment).map(([sentiment, count]) => (
-                  <div key={sentiment} className="flex items-center justify-between">
-                    <span className="text-sm">{SentimentLabels[sentiment as Sentiment] || sentiment}</span>
-                    <Badge variant="outline">{count}件</Badge>
-                  </div>
-                ))}
+      {selectedLectureId && data && !isLoading && (
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+            <CardTitle className="text-slate-800">コメント分析サマリー</CardTitle>
+            <CardDescription>全{allComments.length}件のコメントの分布状況</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* 感情 */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">感情</h3>
+                <div className="space-y-2.5">
+                  {(() => {
+                    const sentimentColors: Record<string, string> = { positive: '#3b82f6', neutral: '#22c55e', negative: '#ef4444' };
+                    const sentimentOrder: string[] = ['negative', 'neutral', 'positive'];
+                    const maxCount = Math.max(...Object.values(labelStats.sentiment), 1);
+                    return sentimentOrder
+                      .map(key => [key, labelStats.sentiment[key] || 0] as [string, number])
+                      .map(([sentiment, count]) => (
+                        <div key={sentiment}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-slate-600">{SentimentLabels[sentiment as Sentiment] || sentiment}</span>
+                            <span className="text-sm font-medium text-slate-800">{count}件</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: sentimentColors[sentiment] || '#94a3b8' }} />
+                          </div>
+                        </div>
+                      ));
+                  })()}
+                </div>
               </div>
-            </div>
 
-            {/* カテゴリ */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">カテゴリ</h3>
-              <div className="space-y-2">
-                {Object.entries(labelStats.category).map(([category, count]) => (
-                  <div key={category} className="flex items-center justify-between">
-                    <span className="text-sm">{CommentCategoryLabels[category as CommentCategory] || category}</span>
-                    <Badge variant="outline">{count}件</Badge>
-                  </div>
-                ))}
+              {/* カテゴリ */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">カテゴリ</h3>
+                <div className="space-y-2.5">
+                  {(() => {
+                    const categoryOrder: string[] = ['content', 'material', 'instructor', 'operation', 'other'];
+                    const maxCount = Math.max(...Object.values(labelStats.category), 1);
+                    return categoryOrder.map(category => [category, labelStats.category[category] || 0] as [string, number]).map(([category, count]) => (
+                      <div key={category}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-slate-600">{CommentCategoryLabels[category as CommentCategory] || category}</span>
+                          <span className="text-sm font-medium text-slate-800">{count}件</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: '#94a3b8' }} />
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
-            </div>
 
-            {/* 重要度 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">重要度</h3>
-              <div className="space-y-2">
-                {Object.entries(labelStats.importance).map(([importance, count]) => (
-                  <div key={importance} className="flex items-center justify-between">
-                    <span className="text-sm">{ImportanceLabels[importance as Importance] || importance}</span>
-                    <Badge variant="outline">{count}件</Badge>
-                  </div>
-                ))}
+              {/* 重要度 */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">重要度</h3>
+                <div className="space-y-2.5">
+                  {(() => {
+                    const importanceColors: Record<string, string> = { high: '#ef4444', medium: '#22c55e', low: '#3b82f6' };
+                    const importanceOrder: string[] = ['high', 'medium', 'low'];
+                    const maxCount = Math.max(...Object.values(labelStats.importance), 1);
+                    return importanceOrder
+                      .map(key => [key, labelStats.importance[key] || 0] as [string, number])
+                      .map(([importance, count]) => (
+                        <div key={importance}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-slate-600">{ImportanceLabels[importance as Importance] || importance}</span>
+                            <span className="text-sm font-medium text-slate-800">{count}件</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: importanceColors[importance] || '#94a3b8' }} />
+                          </div>
+                        </div>
+                      ));
+                  })()}
+                </div>
               </div>
-            </div>
 
-            {/* 修正難易度 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">修正難易度</h3>
-              <div className="space-y-2">
-                {Object.entries(labelStats.fixDifficulty).map(([difficulty, count]) => (
-                  <div key={difficulty} className="flex items-center justify-between">
-                    <span className="text-sm">{FixDifficultyLabels[difficulty as FixDifficulty] || difficulty}</span>
-                    <Badge variant="outline">{count}件</Badge>
-                  </div>
-                ))}
+              {/* 修正難易度 */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">修正難易度</h3>
+                <div className="space-y-2.5">
+                  {(() => {
+                    const difficultyColors: Record<string, string> = { easy: '#3b82f6', hard: '#ef4444', none: '#94a3b8' };
+                    const difficultyOrder: string[] = ['hard', 'easy', 'none'];
+                    const maxCount = Math.max(...Object.values(labelStats.fixDifficulty), 1);
+                    return difficultyOrder
+                      .map(key => [key, labelStats.fixDifficulty[key] || 0] as [string, number])
+                      .map(([difficulty, count]) => (
+                        <div key={difficulty}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-slate-600">{FixDifficultyLabels[difficulty as FixDifficulty] || difficulty}</span>
+                            <span className="text-sm font-medium text-slate-800">{count}件</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: difficultyColors[difficulty] || '#94a3b8' }} />
+                          </div>
+                        </div>
+                      ));
+                  })()}
+                </div>
               </div>
-            </div>
 
-            {/* 誹謗中傷フラグ */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">誹謗中傷</h3>
-              <div className="space-y-2">
-                {labelStats.isAbusive['true'] > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">要注意</span>
-                    <Badge variant="outline">{labelStats.isAbusive['true']}件</Badge>
-                  </div>
-                )}
-                {labelStats.isAbusive['false'] > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">安全</span>
-                    <Badge variant="outline">{labelStats.isAbusive['false']}件</Badge>
-                  </div>
-                )}
+              {/* 誹謗中傷フラグ */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">誹謗中傷</h3>
+                <div className="space-y-2.5">
+                  {(() => {
+                    const abusiveEntries: { label: string; count: number; color: string }[] = [
+                      { label: '要注意', count: labelStats.isAbusive['true'] || 0, color: '#ef4444' },
+                      { label: '安全', count: labelStats.isAbusive['false'] || 0, color: '#3b82f6' },
+                    ];
+                    const maxCount = Math.max(...abusiveEntries.map(e => e.count), 1);
+                    return abusiveEntries.map((entry) => (
+                      <div key={entry.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-slate-600">{entry.label}</span>
+                          <span className="text-sm font-medium text-slate-800">{entry.count}件</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(entry.count / maxCount) * 100}%`, backgroundColor: entry.color }} />
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* コメント一覧 */}
       {selectedLectureId && data && !isLoading && (
-        <Card>
-          <CardHeader>
-            <CardTitle>コメント一覧</CardTitle>
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+            <CardTitle className="text-slate-800">コメント一覧</CardTitle>
             <CardDescription>フィルタリングして表示</CardDescription>
           </CardHeader>
           <CardContent>
@@ -754,9 +769,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
-                    <SelectItem value="positive">ポジティブ</SelectItem>
-                    <SelectItem value="neutral">ニュートラル</SelectItem>
                     <SelectItem value="negative">ネガティブ</SelectItem>
+                    <SelectItem value="neutral">ニュートラル</SelectItem>
+                    <SelectItem value="positive">ポジティブ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -798,8 +813,8 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="hard">困難</SelectItem>
                     <SelectItem value="easy">容易</SelectItem>
-                    <SelectItem value="hard">難しい</SelectItem>
                     <SelectItem value="none">なし</SelectItem>
                   </SelectContent>
                 </Select>

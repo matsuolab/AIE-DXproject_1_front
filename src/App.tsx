@@ -8,9 +8,10 @@ import { DataDelete } from './components/DataDelete';
 import { Toaster } from './components/ui/sonner';
 import { fetchCourses, ApiError, logout } from './api/client';
 import type { CourseItem } from './types/api';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { dummyCourses } from './data/dummy';
+import { Loader2, RefreshCw, WifiOff } from 'lucide-react';
 import { Button } from './components/ui/button';
-import { Card, CardContent } from './components/ui/card';
+import { Alert, AlertDescription } from './components/ui/alert';
 
 type ViewMode = 'list' | 'dashboard' | 'upload' | 'delete';
 
@@ -32,8 +33,10 @@ export default function App() {
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('講座一覧の取得に失敗しました');
+        setError('講座一覧の取得に失敗しました。バックエンドAPIが起動しているかご確認ください。現在はダミーデータを表示しています。');
       }
+      // API接続エラー時はダミー講座で画面を表示する
+      setCourses(dummyCourses);
     } finally {
       setIsLoading(false);
     }
@@ -103,35 +106,6 @@ export default function App() {
     );
   }
 
-  // エラー表示
-  if (error && viewMode === 'list') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header
-          showBackButton={false}
-          onBackClick={handleBackToList}
-          onLogout={handleLogout}
-        />
-        <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="py-8">
-              <div className="flex flex-col items-center text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-                <h2 className="text-lg font-semibold mb-2">エラーが発生しました</h2>
-                <p className="text-gray-600 mb-6">{error}</p>
-                <Button onClick={loadCourses} variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  再読み込み
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <Toaster />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
@@ -139,6 +113,22 @@ export default function App() {
         onBackClick={handleBackToList}
         onLogout={handleLogout}
       />
+
+      {/* API接続エラー時の警告バナー */}
+      {error && (
+        <div className="container mx-auto px-4 pt-4 max-w-7xl">
+          <Alert className="border-amber-300 bg-amber-50">
+            <WifiOff className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
+              <span className="text-amber-800 text-sm">{error}</span>
+              <Button onClick={loadCourses} variant="outline" size="sm" className="shrink-0">
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                再接続
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {viewMode === 'dashboard' && selectedCourse ? (
         <CourseDashboard
