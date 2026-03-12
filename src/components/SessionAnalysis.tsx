@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
@@ -61,6 +61,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [fixDifficultyFilter, setFixDifficultyFilter] = useState<string>('all');
   const [isAbusiveFilter, setIsAbusiveFilter] = useState<string>('all');
   const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all');
+  const [meetingPriorityFilter, setMeetingPriorityFilter] = useState<string>('all');
 
   // データ取得
   const loadData = useCallback(async () => {
@@ -107,8 +108,9 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       (isAbusiveFilter === 'true' && comment.is_abusive === true) ||
       (isAbusiveFilter === 'false' && comment.is_abusive === false);
     const questionTypeMatch = questionTypeFilter === 'all' || comment.question_type === questionTypeFilter;
-    return sentimentMatch && categoryMatch && importanceMatch && fixDifficultyMatch && isAbusiveMatch && questionTypeMatch;
-  });
+    const meetingPriorityMatch = meetingPriorityFilter === 'all' || comment.meeting_priority === Number(meetingPriorityFilter);
+    return sentimentMatch && categoryMatch && importanceMatch && fixDifficultyMatch && isAbusiveMatch && questionTypeMatch && meetingPriorityMatch;
+  }).sort((a, b) => (a.meeting_priority ?? Infinity) - (b.meeting_priority ?? Infinity));
 
 
   // ラベル別の集計を計算
@@ -569,50 +571,6 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         </Card>
       )}
 
-      {/* 早急対応コメント */}
-      {selectedLectureId && data && !isLoading && (
-        <Card className="border-orange-200 bg-orange-50/30">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">
-                    早急対応コメント
-                  </CardTitle>
-                  <CardDescription>
-                    <span style={{ color: '#ef4444' }} className="font-medium">ネガティブ</span>かつ<span className="text-slate-700 font-medium">講義資料・運営</span>に関する重要度の<span style={{ color: '#ef4444' }} className="font-medium">高い</span>コメント（修正が<span style={{ color: '#3b82f6' }} className="font-medium">容易</span>なもの）
-                  </CardDescription>
-                </div>
-              </div>
-              {data.priority_comments.length > 0 && (
-                <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-                  {data.priority_comments.length}件
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {data.priority_comments.length > 0 ? (
-              <ul className="space-y-2">
-                {data.priority_comments.map((comment) => (
-                  <li key={comment.id} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
-                    <span className="text-orange-500 shrink-0 mt-1.5 text-[6px]">&#9679;</span>
-                    <span>{comment.text}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500 py-4 text-center">
-                この回には早急対応が必要なコメントはありません
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* ラベル集計表示 */}
       {selectedLectureId && data && !isLoading && (
         <Card className="border border-slate-200 shadow-sm">
@@ -751,6 +709,51 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
         </Card>
       )}
 
+      {/* 早急対応コメント */}
+      {selectedLectureId && data && !isLoading && (
+        <Card className="border-orange-200 bg-orange-50/30">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    早急対応コメント
+                    <Badge variant="outline" className="border-red-300 text-red-700 text-xs font-normal">確認優先度 1</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    <span style={{ color: '#ef4444' }} className="font-medium">ネガティブ</span>かつ<span className="text-slate-700 font-medium">講義資料・運営</span>に関する重要度の<span style={{ color: '#ef4444' }} className="font-medium">高い</span>コメント（修正が<span style={{ color: '#3b82f6' }} className="font-medium">容易</span>なもの）
+                  </CardDescription>
+                </div>
+              </div>
+              {data.priority_comments.length > 0 && (
+                <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+                  {data.priority_comments.length}件
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {data.priority_comments.length > 0 ? (
+              <ul className="space-y-2">
+                {data.priority_comments.map((comment) => (
+                  <li key={comment.id} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
+                    <span className="text-orange-500 shrink-0 mt-1.5 text-[6px]">&#9679;</span>
+                    <span>{comment.text}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 py-4 text-center">
+                この回には早急対応が必要なコメントはありません
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* コメント一覧 */}
       {selectedLectureId && data && !isLoading && (
         <Card className="border border-slate-200 shadow-sm">
@@ -776,6 +779,39 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     <SelectItem value="instructor_feedback">講師フィードバック</SelectItem>
                     <SelectItem value="future_requests">今後の要望</SelectItem>
                     <SelectItem value="free_comment">自由コメント</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm mb-2 block">確認優先度</label>
+                <Select value={meetingPriorityFilter} onValueChange={setMeetingPriorityFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel>要対応</SelectLabel>
+                      <SelectItem value="1">1 - 早急対応（資料・運営）</SelectItem>
+                      <SelectItem value="2">2 - 要対応（修正容易）</SelectItem>
+                      <SelectItem value="3">3 - 要対応（修正困難）</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>検討</SelectLabel>
+                      <SelectItem value="4">4 - 要検討（修正容易）</SelectItem>
+                      <SelectItem value="5">5 - 要検討（修正困難）</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>軽微</SelectLabel>
+                      <SelectItem value="6">6 - 軽微（修正容易）</SelectItem>
+                      <SelectItem value="7">7 - 軽微（修正困難）</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>好評</SelectLabel>
+                      <SelectItem value="8">8 - 好評（重要）</SelectItem>
+                      <SelectItem value="9">9 - 好評（中程度）</SelectItem>
+                      <SelectItem value="10">10 - 好評（軽微）</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -857,6 +893,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[120px]">設問タイプ</TableHead>
+                    <TableHead className="w-[100px]">確認優先度</TableHead>
                     <TableHead className="w-[100px]">感情</TableHead>
                     <TableHead className="w-[120px]">カテゴリ</TableHead>
                     <TableHead className="w-[100px]">重要度</TableHead>
@@ -874,6 +911,15 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                             {QuestionTypeLabels[comment.question_type]}
                           </Badge>
                         </TableCell>
+                        <TableCell>
+                          {comment.meeting_priority != null ? (
+                            <Badge variant="outline" className={comment.meeting_priority <= 3 ? 'border-red-300 text-red-700' : comment.meeting_priority <= 7 ? 'border-slate-300 text-slate-700' : 'border-blue-300 text-blue-700'}>
+                              {comment.meeting_priority}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>{getSentimentBadge(comment.sentiment)}</TableCell>
                         <TableCell>{getCategoryBadge(comment.category)}</TableCell>
                         <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
@@ -884,7 +930,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={8} className="text-center text-gray-500 py-8">
                         条件に一致するコメントがありません
                       </TableCell>
                     </TableRow>
