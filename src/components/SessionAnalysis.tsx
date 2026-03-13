@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { AlertCircle, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, Award, Radar as RadarIcon, BarChart3, PieChart as PieChartIcon, List } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Calendar, User, BookOpen, Loader2, Award, Radar as RadarIcon, BarChart3, PieChart as PieChartIcon, List, Copy, Check } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { fetchSessionAnalysis } from '../api/client';
 import { getDummySessionAnalysis } from '../data/dummy';
@@ -60,6 +60,8 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
   const [importanceFilter, setImportanceFilter] = useState<string>('all');
   const [fixDifficultyFilter, setFixDifficultyFilter] = useState<string>('all');
   const [isAbusiveFilter, setIsAbusiveFilter] = useState<string>('all');
+  const [copiedCommentId, setCopiedCommentId] = useState<string | null>(null);
+  const [copiedPriority, setCopiedPriority] = useState(false);
   const [questionTypeFilter, setQuestionTypeFilter] = useState<string>('all');
   const [meetingPriorityFilter, setMeetingPriorityFilter] = useState<string>('all');
 
@@ -80,7 +82,7 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       setData(response);
     } catch {
       // API接続失敗時はダミーデータで表示
-      setData(getDummySessionAnalysis(selectedLectureId));
+      setData(getDummySessionAnalysis(selectedLectureId, analysisType));
       setError(null);
     } finally {
       setIsLoading(false);
@@ -215,6 +217,19 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
       return <Badge variant="default" className="bg-red-100 text-red-800 hover:bg-red-100">要注意</Badge>;
     }
     return <Badge variant="default" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>安全</Badge>;
+  };
+
+  const handleCopyComment = async (commentId: string, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedCommentId(commentId);
+    setTimeout(() => setCopiedCommentId(null), 2000);
+  };
+
+  const handleCopyPriorityComments = async (comments: CommentItem[]) => {
+    const text = comments.map((c) => `・${c.text}`).join('\n');
+    await navigator.clipboard.writeText(text);
+    setCopiedPriority(true);
+    setTimeout(() => setCopiedPriority(false), 2000);
   };
 
   return (
@@ -737,14 +752,34 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
           </CardHeader>
           <CardContent>
             {data.priority_comments.length > 0 ? (
-              <ul className="space-y-2">
-                {data.priority_comments.map((comment) => (
-                  <li key={comment.id} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
-                    <span className="text-orange-500 shrink-0 mt-1.5 text-[6px]">&#9679;</span>
-                    <span>{comment.text}</span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="space-y-2">
+                  {data.priority_comments.map((comment) => (
+                    <li key={comment.id} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
+                      <span className="text-orange-500 shrink-0 mt-1.5 text-[6px]">&#9679;</span>
+                      <span>{comment.text}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 pt-3 border-t border-orange-200 flex justify-start">
+                  <button
+                    onClick={() => handleCopyPriorityComments(data.priority_comments)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-orange-300 text-orange-700 hover:bg-orange-100 transition-colors"
+                  >
+                    {copiedPriority ? (
+                      <>
+                        <Check className="h-4 w-4 text-green-500" />
+                        コピーしました
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        すべてコピー
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
             ) : (
               <p className="text-sm text-gray-500 py-4 text-center">
                 この回には早急対応が必要なコメントはありません
@@ -925,7 +960,22 @@ export function SessionAnalysis({ courseSessions, analysisType, studentAttribute
                         <TableCell>{getImportanceBadge(comment.importance)}</TableCell>
                         <TableCell>{getFixDifficultyBadge(comment.fix_difficulty)}</TableCell>
                         <TableCell>{getIsAbusiveBadge(comment.is_abusive)}</TableCell>
-                        <TableCell>{comment.text}</TableCell>
+                        <TableCell>
+                          <div className="flex items-start gap-2">
+                            <span className="flex-1">{comment.text}</span>
+                            <button
+                              onClick={() => handleCopyComment(comment.id, comment.text)}
+                              className="flex-shrink-0 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="コメントをコピー"
+                            >
+                              {copiedCommentId === comment.id ? (
+                                <Check className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
