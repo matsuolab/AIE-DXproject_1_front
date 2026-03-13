@@ -8,7 +8,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { fetchOverallTrends } from '../api/client';
-import { dummyOverallTrends } from '../data/dummy';
+import { getDummyOverallTrends } from '../data/dummy';
 import type {
   OverallTrendsResponse,
   AnalysisType,
@@ -97,7 +97,7 @@ export function OverallTrends({ courseName, courseYear, coursePeriod, analysisTy
       setData(response);
     } catch {
       // API接続失敗時はダミーデータで表示
-      setData(dummyOverallTrends);
+      setData(getDummyOverallTrends(analysisType));
       setError(null);
     } finally {
       setIsLoading(false);
