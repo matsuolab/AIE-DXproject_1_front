@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle, GitCompareArrows, Award, BarChart3, ClipboardList } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, Loader2, AlertCircle, GitCompareArrows, Award, BarChart3 } from 'lucide-react';
 import { formatAcademicYear, parseAcademicYear } from '../lib/course-utils';
 import { fetchYearComparison } from '../api/client';
 import { getDummyYearComparison } from '../data/dummy';
@@ -62,7 +62,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
       setData(response);
     } catch {
       // API接続失敗時はダミーデータで表示
-      setData(getDummyYearComparison(studentAttribute));
+      setData(getDummyYearComparison(studentAttribute, analysisType));
       setError(null);
     } finally {
       setIsLoading(false);
@@ -126,7 +126,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
             年度比較
           </CardTitle>
           <CardDescription>
-            他の年度と比較して、講座の改善傾向や課題を分析できます
+            同じ講座の異なる年度のデータを比較します
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -208,7 +208,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
               <CardTitle className="flex items-center gap-2 text-slate-800">
                 <Award className="h-5 w-5 text-blue-600" />
-                総合指標の比較
+                  総合指標の比較
               </CardTitle>
               <CardDescription>主要な指標を年度間で比較</CardDescription>
             </CardHeader>
@@ -238,7 +238,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        比較: {data.comparison.average_nps.toFixed(1)}
+                          比較: {data.comparison.average_nps.toFixed(1)}
                       </p>
                     </div>
                   </CardContent>
@@ -271,7 +271,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        比較: {data.comparison.average_scores.overall_satisfaction.toFixed(2)}
+                          比較: {data.comparison.average_scores.overall_satisfaction.toFixed(2)}
                       </p>
                     </div>
                   </CardContent>
@@ -304,7 +304,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        比較: {data.comparison.average_scores.instructor_satisfaction.toFixed(2)}
+                          比較: {data.comparison.average_scores.instructor_satisfaction.toFixed(2)}
                       </p>
                     </div>
                   </CardContent>
@@ -334,7 +334,7 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
                         })()}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        比較: {data.comparison.total_responses}
+                          比較: {data.comparison.total_responses}
                       </p>
                     </div>
                   </CardContent>
@@ -343,136 +343,71 @@ export function YearComparison({ currentCourseName, currentYear, currentPeriod, 
             </CardContent>
           </Card>
 
-          {/* NPS推移の比較 */}
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                NPS推移の年度比較
-              </CardTitle>
-              <CardDescription>講義回ごとのNPSスコアの推移を比較</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={getCombinedNPSData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="session" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey={currentYearPeriodLabel}
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    dot={{ r: 5 }}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={comparisonYearPeriodLabel}
-                    stroke="#94a3b8"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={{ r: 4 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* NPS推移の比較 + カテゴリ別平均スコアの比較 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* NPS推移の比較 */}
+            <Card className="border border-slate-200 shadow-sm">
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  NPS推移の年度比較
+                </CardTitle>
+                <CardDescription>講義回ごとのNPSスコアの推移を比較</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={getCombinedNPSData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="session" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey={currentYearPeriodLabel}
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{ r: 5 }}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={comparisonYearPeriodLabel}
+                      stroke="#94a3b8"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ r: 4 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-          {/* カテゴリ別平均スコアの比較 */}
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                カテゴリ別平均スコアの比較
-              </CardTitle>
-              <CardDescription>各評価項目の年度間比較</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={getCombinedCategoryData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
-                  <YAxis domain={[0, 5]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey={currentYearPeriodLabel} fill="#3b82f6" />
-                  <Bar dataKey={comparisonYearPeriodLabel} fill="#94a3b8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* 改善点と課題 */}
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <ClipboardList className="h-5 w-5 text-blue-600" />
-                年度比較サマリー
-              </CardTitle>
-              <CardDescription>主な改善点と課題</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    <span className="text-green-900">改善された点</span>
-                  </h4>
-                  <ul className="text-sm text-green-800 space-y-1 ml-7">
-                    {data.score_comparison
-                      .filter(item => item.difference > 0)
-                      .slice(0, 3)
-                      .map(item => (
-                        <li key={item.category_key}>
-                          • {item.category}が+{item.difference.toFixed(2)}ポイント向上
-                        </li>
-                      ))}
-                    {data.current.average_nps > data.comparison.average_nps && (
-                      <li>
-                        • NPSスコアが{calculateDifference(data.current.average_nps, data.comparison.average_nps).formatted}ポイント向上
-                      </li>
-                    )}
-                  </ul>
-                </div>
-
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="flex items-center gap-2 mb-2">
-                    <TrendingDown className="h-5 w-5 text-yellow-600" />
-                    <span className="text-yellow-900">要改善点</span>
-                  </h4>
-                  <ul className="text-sm text-yellow-800 space-y-1 ml-7">
-                    {data.score_comparison
-                      .filter(item => item.difference < 0)
-                      .slice(0, 3)
-                      .map(item => (
-                        <li key={item.category_key}>
-                          • {item.category}が{item.difference.toFixed(2)}ポイント低下
-                        </li>
-                      ))}
-                    {data.score_comparison.filter(item => item.difference < 0).length === 0 && (
-                      <li>• 全項目で前年度比で改善または維持されています</li>
-                    )}
-                  </ul>
-                </div>
-
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="flex items-center gap-2 mb-2">
-                    <Info className="h-5 w-5 text-blue-600" />
-                    <span className="text-blue-900">今後の課題</span>
-                  </h4>
-                  <ul className="text-sm text-blue-800 space-y-1 ml-7">
-                    <li>• 継続的な満足度向上のための施策実施</li>
-                    <li>• 受講生の予習・復習支援の強化</li>
-                    <li>• フィードバックを活かした講義内容の最適化</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            {/* カテゴリ別平均スコアの比較 */}
+            <Card className="border border-slate-200 shadow-sm">
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  カテゴリ別平均スコアの比較
+                </CardTitle>
+                <CardDescription>各評価項目の年度間比較</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={getCombinedCategoryData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
+                    <YAxis domain={[0, 5]} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey={currentYearPeriodLabel} fill="#3b82f6" />
+                    <Bar dataKey={comparisonYearPeriodLabel} fill="#94a3b8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
 
