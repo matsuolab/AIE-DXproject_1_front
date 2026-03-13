@@ -1,5 +1,9 @@
 # AIE-DXプロジェクト１【フロントエンド】
 
+講義アンケートデータをアップロードし、分析結果を可視化する講義アンケート分析ダッシュボードのフロントエンドです。
+
+バックエンドリポジトリ: https://github.com/matsuolab/AIE-DXproject_1_back
+
 ## 使用技術
 
 | カテゴリ | 技術 |
@@ -45,6 +49,8 @@ VITE_API_URL="https://your-api-domain.com"
 ```
 
 > **Note:** API未接続（環境変数未設定またはAPIサーバーが起動していない）の場合でも、アプリケーション内蔵のダミーデータを使用して動作を確認できます。
+>
+> ローカルで実際の分析結果を確認したい場合は、[バックエンドリポジトリ](https://github.com/matsuolab/AIE-DXproject_1_back)のFastAPIサーバーを起動し、`VITE_API_URL`にそのURLを指定してください。
 
 ### 5. 開発サーバーの起動
 ```bash
