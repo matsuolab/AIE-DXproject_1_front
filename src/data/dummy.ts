@@ -57,105 +57,207 @@ export const dummyCourses: CourseItem[] = [
 
 // ===== 全体傾向 =====
 
-export const dummyOverallTrends: OverallTrendsResponse = {
-  lecture_info: [
-    { lecture_id: 9001, session: '第1回', lecture_date: '2024-10-05', instructor_name: '山田 太郎', description: 'イントロダクション・講座概要' },
-    { lecture_id: 9002, session: '第2回', lecture_date: '2024-10-19', instructor_name: '山田 太郎', description: '基礎理論と実践' },
-    { lecture_id: 9003, session: '第3回', lecture_date: '2024-11-02', instructor_name: '佐藤 花子', description: 'ケーススタディ分析' },
-    { lecture_id: 9004, session: '第4回', lecture_date: '2024-11-16', instructor_name: '佐藤 花子', description: '応用演習' },
-    { lecture_id: 9005, session: '第5回', lecture_date: '2024-11-30', instructor_name: '山田 太郎', description: '総合ディスカッション' },
-    { lecture_id: 9006, session: '特別回', lecture_date: '2024-12-14', instructor_name: '鈴木 一郎', description: '特別講演：業界動向' },
-  ],
-  response_trends: [
-    { session: '第1回', response_count: 45, retention_rate: 100 },
-    { session: '第2回', response_count: 42, retention_rate: 93.3 },
-    { session: '第3回', response_count: 40, retention_rate: 88.9 },
-    { session: '第4回', response_count: 38, retention_rate: 84.4 },
-    { session: '第5回', response_count: 36, retention_rate: 80.0 },
-    { session: '特別回', response_count: 30, retention_rate: 66.7 },
-  ],
-  participation_trends: [
-    { session: '第1回', zoom_participants: 52, recording_views: 15 },
-    { session: '第2回', zoom_participants: 48, recording_views: 20 },
-    { session: '第3回', zoom_participants: 46, recording_views: 18 },
-    { session: '第4回', zoom_participants: 44, recording_views: 22 },
-    { session: '第5回', zoom_participants: 42, recording_views: 25 },
-    { session: '特別回', zoom_participants: 35, recording_views: 30 },
-  ],
-  nps_summary: {
-    score: 28.5,
-    promoters_count: 18,
-    promoters_percentage: 47.4,
-    neutrals_count: 13,
-    neutrals_percentage: 34.2,
-    detractors_count: 7,
-    detractors_percentage: 18.4,
-    total_responses: 38,
-  },
-  nps_trends: [
-    { session: '第1回', nps_score: 20.0 },
-    { session: '第2回', nps_score: 22.5 },
-    { session: '第3回', nps_score: 30.0 },
-    { session: '第4回', nps_score: 25.0 },
-    { session: '第5回', nps_score: 35.0 },
-    { session: '特別回', nps_score: 40.0 },
-  ],
-  score_trends: [
-    { session: '第1回', scores: { overall_satisfaction: 3.8, learning_amount: 3.5, comprehension: 3.6, operations: 4.0, instructor_satisfaction: 4.1, time_management: 3.9, question_handling: 3.7, speaking_style: 4.0, preparation: 3.2, motivation: 3.8, future_application: 3.5 } },
-    { session: '第2回', scores: { overall_satisfaction: 4.0, learning_amount: 3.7, comprehension: 3.8, operations: 4.1, instructor_satisfaction: 4.2, time_management: 4.0, question_handling: 3.9, speaking_style: 4.1, preparation: 3.3, motivation: 4.0, future_application: 3.7 } },
-    { session: '第3回', scores: { overall_satisfaction: 4.2, learning_amount: 3.9, comprehension: 4.0, operations: 4.2, instructor_satisfaction: 4.4, time_management: 4.1, question_handling: 4.0, speaking_style: 4.3, preparation: 3.5, motivation: 4.2, future_application: 3.9 } },
-    { session: '第4回', scores: { overall_satisfaction: 4.1, learning_amount: 3.8, comprehension: 3.9, operations: 4.0, instructor_satisfaction: 4.3, time_management: 4.0, question_handling: 4.1, speaking_style: 4.2, preparation: 3.4, motivation: 4.1, future_application: 3.8 } },
-    { session: '第5回', scores: { overall_satisfaction: 4.3, learning_amount: 4.0, comprehension: 4.1, operations: 4.3, instructor_satisfaction: 4.5, time_management: 4.2, question_handling: 4.2, speaking_style: 4.4, preparation: 3.6, motivation: 4.3, future_application: 4.0 } },
-    { session: '特別回', scores: { overall_satisfaction: 4.5, learning_amount: 4.2, comprehension: 4.3, operations: 4.4, instructor_satisfaction: 4.6, time_management: 4.3, question_handling: 4.3, speaking_style: 4.5, preparation: 3.5, motivation: 4.4, future_application: 4.2 } },
-  ],
-  overall_averages: {
-    overall: {
-      label: '総合満足度',
-      items: [{ name: '総合的な満足度', score: 4.15 }],
-    },
-    content: {
-      label: '講義内容',
-      items: [
-        { name: '講義内容の学習量', score: 3.85 },
-        { name: '講義内容の理解度', score: 3.95 },
-        { name: '講義中の運営アナウンス', score: 4.17 },
+export function getDummyOverallTrends(analysisType: string = '確定版'): OverallTrendsResponse {
+  const isSokuhou = analysisType === '速報版';
+
+  if (isSokuhou) {
+    return {
+      lecture_info: [
+        { lecture_id: 9001, session: '第1回', lecture_date: '2024-10-05', instructor_name: '山田 太郎', description: 'イントロダクション・講座概要' },
+        { lecture_id: 9002, session: '第2回', lecture_date: '2024-10-19', instructor_name: '山田 太郎', description: '基礎理論と実践' },
+        { lecture_id: 9003, session: '第3回', lecture_date: '2024-11-02', instructor_name: '佐藤 花子', description: 'ケーススタディ分析' },
+        { lecture_id: 9004, session: '第4回', lecture_date: '2024-11-16', instructor_name: '佐藤 花子', description: '応用演習' },
+        { lecture_id: 9005, session: '第5回', lecture_date: '2024-11-30', instructor_name: '山田 太郎', description: '総合ディスカッション' },
+        { lecture_id: 9006, session: '特別回', lecture_date: '2024-12-14', instructor_name: '鈴木 一郎', description: '特別講演：業界動向' },
       ],
-    },
-    instructor: {
-      label: '講師評価',
-      items: [
-        { name: '講師の総合的な満足度', score: 4.35 },
-        { name: '講師の授業時間の使い方', score: 4.08 },
-        { name: '講師の質問対応', score: 4.03 },
-        { name: '講師の話し方', score: 4.25 },
+      response_trends: [
+        { session: '第1回', response_count: 28, retention_rate: 100 },
+        { session: '第2回', response_count: 26, retention_rate: 92.9 },
+        { session: '第3回', response_count: 25, retention_rate: 89.3 },
+        { session: '第4回', response_count: 23, retention_rate: 82.1 },
+        { session: '第5回', response_count: 22, retention_rate: 78.6 },
+        { session: '特別回', response_count: 18, retention_rate: 64.3 },
       ],
-    },
-    self_evaluation: {
-      label: '受講生の自己評価',
-      items: [
-        { name: '自身の予習', score: 3.42 },
-        { name: '自身の意欲', score: 4.13 },
-        { name: '自身の今後への活用', score: 3.85 },
+      participation_trends: [
+        { session: '第1回', zoom_participants: 52, recording_views: 0 },
+        { session: '第2回', zoom_participants: 48, recording_views: 0 },
+        { session: '第3回', zoom_participants: 46, recording_views: 0 },
+        { session: '第4回', zoom_participants: 44, recording_views: 0 },
+        { session: '第5回', zoom_participants: 42, recording_views: 0 },
+        { session: '特別回', zoom_participants: 35, recording_views: 0 },
       ],
+      nps_summary: {
+        score: 25.8,
+        promoters_count: 10,
+        promoters_percentage: 43.5,
+        neutrals_count: 8,
+        neutrals_percentage: 34.8,
+        detractors_count: 5,
+        detractors_percentage: 21.7,
+        total_responses: 23,
+      },
+      nps_trends: [
+        { session: '第1回', nps_score: 18.0 },
+        { session: '第2回', nps_score: 20.5 },
+        { session: '第3回', nps_score: 27.0 },
+        { session: '第4回', nps_score: 23.0 },
+        { session: '第5回', nps_score: 32.0 },
+        { session: '特別回', nps_score: 37.0 },
+      ],
+      score_trends: [
+        { session: '第1回', scores: { overall_satisfaction: 3.7, learning_amount: 3.4, comprehension: 3.5, operations: 3.9, instructor_satisfaction: 4.0, time_management: 3.8, question_handling: 3.6, speaking_style: 3.9, preparation: 3.1, motivation: 3.7, future_application: 3.4 } },
+        { session: '第2回', scores: { overall_satisfaction: 3.9, learning_amount: 3.6, comprehension: 3.7, operations: 4.0, instructor_satisfaction: 4.1, time_management: 3.9, question_handling: 3.8, speaking_style: 4.0, preparation: 3.2, motivation: 3.9, future_application: 3.6 } },
+        { session: '第3回', scores: { overall_satisfaction: 4.1, learning_amount: 3.8, comprehension: 3.9, operations: 4.1, instructor_satisfaction: 4.3, time_management: 4.0, question_handling: 3.9, speaking_style: 4.2, preparation: 3.4, motivation: 4.1, future_application: 3.8 } },
+        { session: '第4回', scores: { overall_satisfaction: 4.0, learning_amount: 3.7, comprehension: 3.8, operations: 3.9, instructor_satisfaction: 4.2, time_management: 3.9, question_handling: 4.0, speaking_style: 4.1, preparation: 3.3, motivation: 4.0, future_application: 3.7 } },
+        { session: '第5回', scores: { overall_satisfaction: 4.2, learning_amount: 3.9, comprehension: 4.0, operations: 4.2, instructor_satisfaction: 4.4, time_management: 4.1, question_handling: 4.1, speaking_style: 4.3, preparation: 3.5, motivation: 4.2, future_application: 3.9 } },
+        { session: '特別回', scores: { overall_satisfaction: 4.4, learning_amount: 4.1, comprehension: 4.2, operations: 4.3, instructor_satisfaction: 4.5, time_management: 4.2, question_handling: 4.2, speaking_style: 4.4, preparation: 3.4, motivation: 4.3, future_application: 4.1 } },
+      ],
+      overall_averages: {
+        overall: {
+          label: '総合満足度',
+          items: [{ name: '総合的な満足度', score: 4.05 }],
+        },
+        content: {
+          label: '講義内容',
+          items: [
+            { name: '講義内容の学習量', score: 3.75 },
+            { name: '講義内容の理解度', score: 3.85 },
+            { name: '講義中の運営アナウンス', score: 4.07 },
+          ],
+        },
+        instructor: {
+          label: '講師評価',
+          items: [
+            { name: '講師の総合的な満足度', score: 4.25 },
+            { name: '講師の授業時間の使い方', score: 3.98 },
+            { name: '講師の質問対応', score: 3.93 },
+            { name: '講師の話し方', score: 4.15 },
+          ],
+        },
+        self_evaluation: {
+          label: '受講生の自己評価',
+          items: [
+            { name: '自身の予習', score: 3.32 },
+            { name: '自身の意欲', score: 4.03 },
+            { name: '自身の今後への活用', score: 3.75 },
+          ],
+        },
+      },
+      sentiment_summary: [
+        { sentiment: 'positive', count: 52, percentage: 57.1 },
+        { sentiment: 'neutral', count: 24, percentage: 26.4 },
+        { sentiment: 'negative', count: 15, percentage: 16.5 },
+      ],
+      category_summary: [
+        { category: 'content', count: 32 },
+        { category: 'instructor', count: 23 },
+        { category: 'material', count: 15 },
+        { category: 'operation', count: 12 },
+        { category: 'other', count: 9 },
+      ],
+    };
+  }
+
+  return {
+    lecture_info: [
+      { lecture_id: 9001, session: '第1回', lecture_date: '2024-10-05', instructor_name: '山田 太郎', description: 'イントロダクション・講座概要' },
+      { lecture_id: 9002, session: '第2回', lecture_date: '2024-10-19', instructor_name: '山田 太郎', description: '基礎理論と実践' },
+      { lecture_id: 9003, session: '第3回', lecture_date: '2024-11-02', instructor_name: '佐藤 花子', description: 'ケーススタディ分析' },
+      { lecture_id: 9004, session: '第4回', lecture_date: '2024-11-16', instructor_name: '佐藤 花子', description: '応用演習' },
+      { lecture_id: 9005, session: '第5回', lecture_date: '2024-11-30', instructor_name: '山田 太郎', description: '総合ディスカッション' },
+      { lecture_id: 9006, session: '特別回', lecture_date: '2024-12-14', instructor_name: '鈴木 一郎', description: '特別講演：業界動向' },
+    ],
+    response_trends: [
+      { session: '第1回', response_count: 45, retention_rate: 100 },
+      { session: '第2回', response_count: 42, retention_rate: 93.3 },
+      { session: '第3回', response_count: 40, retention_rate: 88.9 },
+      { session: '第4回', response_count: 38, retention_rate: 84.4 },
+      { session: '第5回', response_count: 36, retention_rate: 80.0 },
+      { session: '特別回', response_count: 30, retention_rate: 66.7 },
+    ],
+    participation_trends: [
+      { session: '第1回', zoom_participants: 52, recording_views: 15 },
+      { session: '第2回', zoom_participants: 48, recording_views: 20 },
+      { session: '第3回', zoom_participants: 46, recording_views: 18 },
+      { session: '第4回', zoom_participants: 44, recording_views: 22 },
+      { session: '第5回', zoom_participants: 42, recording_views: 25 },
+      { session: '特別回', zoom_participants: 35, recording_views: 30 },
+    ],
+    nps_summary: {
+      score: 28.5,
+      promoters_count: 18,
+      promoters_percentage: 47.4,
+      neutrals_count: 13,
+      neutrals_percentage: 34.2,
+      detractors_count: 7,
+      detractors_percentage: 18.4,
+      total_responses: 38,
     },
-  },
-  sentiment_summary: [
-    { sentiment: 'positive', count: 85, percentage: 56.7 },
-    { sentiment: 'neutral', count: 40, percentage: 26.7 },
-    { sentiment: 'negative', count: 25, percentage: 16.6 },
-  ],
-  category_summary: [
-    { category: 'content', count: 52 },
-    { category: 'instructor', count: 38 },
-    { category: 'material', count: 25 },
-    { category: 'operation', count: 20 },
-    { category: 'other', count: 15 },
-  ],
-};
+    nps_trends: [
+      { session: '第1回', nps_score: 20.0 },
+      { session: '第2回', nps_score: 22.5 },
+      { session: '第3回', nps_score: 30.0 },
+      { session: '第4回', nps_score: 25.0 },
+      { session: '第5回', nps_score: 35.0 },
+      { session: '特別回', nps_score: 40.0 },
+    ],
+    score_trends: [
+      { session: '第1回', scores: { overall_satisfaction: 3.8, learning_amount: 3.5, comprehension: 3.6, operations: 4.0, instructor_satisfaction: 4.1, time_management: 3.9, question_handling: 3.7, speaking_style: 4.0, preparation: 3.2, motivation: 3.8, future_application: 3.5 } },
+      { session: '第2回', scores: { overall_satisfaction: 4.0, learning_amount: 3.7, comprehension: 3.8, operations: 4.1, instructor_satisfaction: 4.2, time_management: 4.0, question_handling: 3.9, speaking_style: 4.1, preparation: 3.3, motivation: 4.0, future_application: 3.7 } },
+      { session: '第3回', scores: { overall_satisfaction: 4.2, learning_amount: 3.9, comprehension: 4.0, operations: 4.2, instructor_satisfaction: 4.4, time_management: 4.1, question_handling: 4.0, speaking_style: 4.3, preparation: 3.5, motivation: 4.2, future_application: 3.9 } },
+      { session: '第4回', scores: { overall_satisfaction: 4.1, learning_amount: 3.8, comprehension: 3.9, operations: 4.0, instructor_satisfaction: 4.3, time_management: 4.0, question_handling: 4.1, speaking_style: 4.2, preparation: 3.4, motivation: 4.1, future_application: 3.8 } },
+      { session: '第5回', scores: { overall_satisfaction: 4.3, learning_amount: 4.0, comprehension: 4.1, operations: 4.3, instructor_satisfaction: 4.5, time_management: 4.2, question_handling: 4.2, speaking_style: 4.4, preparation: 3.6, motivation: 4.3, future_application: 4.0 } },
+      { session: '特別回', scores: { overall_satisfaction: 4.5, learning_amount: 4.2, comprehension: 4.3, operations: 4.4, instructor_satisfaction: 4.6, time_management: 4.3, question_handling: 4.3, speaking_style: 4.5, preparation: 3.5, motivation: 4.4, future_application: 4.2 } },
+    ],
+    overall_averages: {
+      overall: {
+        label: '総合満足度',
+        items: [{ name: '総合的な満足度', score: 4.15 }],
+      },
+      content: {
+        label: '講義内容',
+        items: [
+          { name: '講義内容の学習量', score: 3.85 },
+          { name: '講義内容の理解度', score: 3.95 },
+          { name: '講義中の運営アナウンス', score: 4.17 },
+        ],
+      },
+      instructor: {
+        label: '講師評価',
+        items: [
+          { name: '講師の総合的な満足度', score: 4.35 },
+          { name: '講師の授業時間の使い方', score: 4.08 },
+          { name: '講師の質問対応', score: 4.03 },
+          { name: '講師の話し方', score: 4.25 },
+        ],
+      },
+      self_evaluation: {
+        label: '受講生の自己評価',
+        items: [
+          { name: '自身の予習', score: 3.42 },
+          { name: '自身の意欲', score: 4.13 },
+          { name: '自身の今後への活用', score: 3.85 },
+        ],
+      },
+    },
+    sentiment_summary: [
+      { sentiment: 'positive', count: 85, percentage: 56.7 },
+      { sentiment: 'neutral', count: 40, percentage: 26.7 },
+      { sentiment: 'negative', count: 25, percentage: 16.6 },
+    ],
+    category_summary: [
+      { category: 'content', count: 52 },
+      { category: 'instructor', count: 38 },
+      { category: 'material', count: 25 },
+      { category: 'operation', count: 20 },
+      { category: 'other', count: 15 },
+    ],
+  };
+}
 
 // ===== 講義回別分析 =====
 
-export function getDummySessionAnalysis(lectureId: number): SessionAnalysisResponse {
+export function getDummySessionAnalysis(lectureId: number, analysisType: string = '確定版'): SessionAnalysisResponse {
   const sessionMap: Record<number, { session: string; date: string; instructor: string; desc: string }> = {
     9001: { session: '第1回', date: '2024-10-05', instructor: '山田 太郎', desc: 'イントロダクション・講座概要' },
     9002: { session: '第2回', date: '2024-10-19', instructor: '山田 太郎', desc: '基礎理論と実践' },
@@ -170,6 +272,176 @@ export function getDummySessionAnalysis(lectureId: number): SessionAnalysisRespo
   };
 
   const info = sessionMap[lectureId] || { session: '第1回', date: '2024-01-01', instructor: '講師名', desc: '講義内容' };
+  const isSokuhou = analysisType === '速報版';
+
+  if (isSokuhou) {
+    return {
+      lecture_info: {
+        lecture_id: lectureId,
+        session: info.session,
+        lecture_date: info.date,
+        instructor_name: info.instructor,
+        description: info.desc,
+        response_count: 26,
+      },
+      nps: {
+        score: 22.0,
+        promoters_count: 9,
+        promoters_percentage: 34.6,
+        neutrals_count: 11,
+        neutrals_percentage: 42.3,
+        detractors_count: 6,
+        detractors_percentage: 23.1,
+      },
+      average_scores: [
+        { category: '総合的な満足度', category_key: 'overall_satisfaction', score: 4.0, full_mark: 5 },
+        { category: '学習量', category_key: 'learning_amount', score: 3.7, full_mark: 5 },
+        { category: '理解度', category_key: 'comprehension', score: 3.8, full_mark: 5 },
+        { category: '運営アナウンス', category_key: 'operations', score: 4.1, full_mark: 5 },
+        { category: '講師満足度', category_key: 'instructor_satisfaction', score: 4.2, full_mark: 5 },
+        { category: '時間の使い方', category_key: 'time_management', score: 3.9, full_mark: 5 },
+        { category: '質問対応', category_key: 'question_handling', score: 3.8, full_mark: 5 },
+        { category: '話し方', category_key: 'speaking_style', score: 4.1, full_mark: 5 },
+        { category: '予習', category_key: 'preparation', score: 3.2, full_mark: 5 },
+        { category: '意欲', category_key: 'motivation', score: 4.0, full_mark: 5 },
+        { category: '今後への活用', category_key: 'future_application', score: 3.7, full_mark: 5 },
+      ],
+      score_distributions: {
+        overall_satisfaction: ratingDistribution([0, 1, 3, 12, 10]),
+        learning_amount: ratingDistribution([1, 2, 5, 11, 7]),
+        comprehension: ratingDistribution([0, 1, 4, 12, 9]),
+        operations: ratingDistribution([0, 1, 2, 11, 12]),
+        instructor_satisfaction: ratingDistribution([0, 1, 2, 10, 13]),
+        time_management: ratingDistribution([0, 1, 4, 11, 10]),
+        question_handling: ratingDistribution([1, 1, 4, 12, 8]),
+        speaking_style: ratingDistribution([0, 1, 2, 10, 13]),
+        preparation: ratingDistribution([1, 3, 7, 10, 5]),
+        motivation: ratingDistribution([0, 1, 3, 11, 11]),
+        future_application: ratingDistribution([0, 2, 5, 10, 9]),
+      },
+      fix_difficulty: { easy: 6, hard: 3 },
+      // priority_comments: 速報版は最初の2件のみ
+      priority_comments: [
+        {
+          id: 'pre-c2',
+          text: '配布資料のフォントが小さくて見づらい部分がありました。',
+          sentiment: 'negative',
+          category: 'material',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        {
+          id: 'pre-c6',
+          text: 'オンライン接続が不安定な回があり、音声が途切れることがありました。',
+          sentiment: 'negative',
+          category: 'operation',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+      ],
+      comments: [
+        // 優先度1: negative + material/operation + high + easy
+        {
+          id: 'pre-c2',
+          text: '配布資料のフォントが小さくて見づらい部分がありました。',
+          sentiment: 'negative',
+          category: 'material',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        {
+          id: 'pre-c6',
+          text: 'オンライン接続が不安定な回があり、音声が途切れることがありました。',
+          sentiment: 'negative',
+          category: 'operation',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        {
+          id: 'pre-c7',
+          text: '資料内のグラフに軸ラベルがなく、何を示しているのか分かりにくかったです。',
+          sentiment: 'negative',
+          category: 'material',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        {
+          id: 'pre-c8',
+          text: '講義開始時のZoomリンクの案内メールが直前すぎて焦りました。前日には送ってほしいです。',
+          sentiment: 'negative',
+          category: 'operation',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 1,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        // 優先度2: high + easy
+        {
+          id: 'pre-c10',
+          text: '説明の順序が前後していて、理解しづらい箇所がありました。構成を見直してほしいです。',
+          sentiment: 'negative',
+          category: 'content',
+          importance: 'high',
+          fix_difficulty: 'easy',
+          meeting_priority: 2,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        // 優先度3: high + hard
+        {
+          id: 'pre-c11',
+          text: '講義のペースが速すぎて、途中からついていけなくなりました。',
+          sentiment: 'negative',
+          category: 'instructor',
+          importance: 'high',
+          fix_difficulty: 'hard',
+          meeting_priority: 3,
+          is_abusive: false,
+          question_type: 'instructor_feedback',
+        },
+        // 優先度4: medium + easy
+        {
+          id: 'pre-c12',
+          text: 'アンケートの回答期限が短いので、もう少し余裕がほしいです。',
+          sentiment: 'neutral',
+          category: 'operation',
+          importance: 'medium',
+          fix_difficulty: 'easy',
+          meeting_priority: 4,
+          is_abusive: false,
+          question_type: 'improvements',
+        },
+        // 優先度8: high + none（ポジティブ）
+        {
+          id: 'pre-c14',
+          text: '講師の専門知識が非常に深く、業界の最新動向を学べて大変有益でした。',
+          sentiment: 'positive',
+          category: 'instructor',
+          importance: 'high',
+          fix_difficulty: 'none',
+          meeting_priority: 8,
+          is_abusive: false,
+          question_type: 'good_points',
+        },
+      ],
+    };
+  }
 
   return {
     lecture_info: {
@@ -470,10 +742,26 @@ function applyOffset(
 
 export function getDummyYearComparison(
   studentAttribute: string = '全体',
+  analysisType: string = '確定版',
 ): YearComparisonResponse {
   const offset = attributeOffsets[studentAttribute] || attributeOffsets['全体'];
+  const isSokuhou = analysisType === '速報版';
 
-  const baseCurrentScores = {
+  // 速報版: 回答数が少なく、スコアのばらつきが大きい
+  // 確定版: 回答数が多く、スコアが安定
+  const baseCurrentScores = isSokuhou ? {
+    overall_satisfaction: 4.05,
+    learning_amount: 3.72,
+    comprehension: 3.88,
+    operations: 4.10,
+    instructor_satisfaction: 4.28,
+    time_management: 3.95,
+    question_handling: 3.90,
+    speaking_style: 4.18,
+    preparation: 3.35,
+    motivation: 4.05,
+    future_application: 3.78,
+  } : {
     overall_satisfaction: 4.15,
     learning_amount: 3.85,
     comprehension: 3.95,
@@ -487,7 +775,19 @@ export function getDummyYearComparison(
     future_application: 3.85,
   };
 
-  const baseComparisonScores = {
+  const baseComparisonScores = isSokuhou ? {
+    overall_satisfaction: 3.78,
+    learning_amount: 3.48,
+    comprehension: 3.62,
+    operations: 3.82,
+    instructor_satisfaction: 4.02,
+    time_management: 3.72,
+    question_handling: 3.65,
+    speaking_style: 3.92,
+    preparation: 3.22,
+    motivation: 3.82,
+    future_application: 3.52,
+  } : {
     overall_satisfaction: 3.85,
     learning_amount: 3.60,
     comprehension: 3.70,
@@ -504,15 +804,66 @@ export function getDummyYearComparison(
   const currentScores = applyOffset(baseCurrentScores, offset.score);
   const comparisonScores = applyOffset(baseComparisonScores, offset.score);
 
-  const currentNps = round2(28.5 + offset.nps);
-  const comparisonNps = round2(18.2 + offset.nps);
+  const currentNps = isSokuhou ? round2(25.8 + offset.nps) : round2(28.5 + offset.nps);
+  const comparisonNps = isSokuhou ? round2(16.5 + offset.nps) : round2(18.2 + offset.nps);
   const npsOffset = offset.nps;
+
+  // 速報版は回答数が少ない（確定版の約6割）
+  const currentResponses = isSokuhou
+    ? Math.max(10, 142 + offset.responses)
+    : Math.max(10, 231 + offset.responses);
+  const comparisonResponses = isSokuhou
+    ? Math.max(8, 118 + offset.responses)
+    : Math.max(8, 198 + offset.responses);
+
+  // 速報版はNPS推移のばらつきが大きい
+  const currentNpsTrends = isSokuhou ? [
+    { session: '第1回', nps_score: round2(18.0 + npsOffset) },
+    { session: '第2回', nps_score: round2(24.5 + npsOffset) },
+    { session: '第3回', nps_score: round2(21.0 + npsOffset) },
+    { session: '第4回', nps_score: round2(30.0 + npsOffset) },
+    { session: '第5回', nps_score: round2(33.5 + npsOffset) },
+  ] : [
+    { session: '第1回', nps_score: round2(20.0 + npsOffset) },
+    { session: '第2回', nps_score: round2(22.5 + npsOffset) },
+    { session: '第3回', nps_score: round2(30.0 + npsOffset) },
+    { session: '第4回', nps_score: round2(25.0 + npsOffset) },
+    { session: '第5回', nps_score: round2(35.0 + npsOffset) },
+  ];
+
+  const comparisonNpsTrends = isSokuhou ? [
+    { session: '第1回', nps_score: round2(12.0 + npsOffset) },
+    { session: '第2回', nps_score: round2(14.5 + npsOffset) },
+    { session: '第3回', nps_score: round2(10.0 + npsOffset) },
+    { session: '第4回', nps_score: round2(22.0 + npsOffset) },
+    { session: '第5回', nps_score: round2(23.5 + npsOffset) },
+  ] : [
+    { session: '第1回', nps_score: round2(15.0 + npsOffset) },
+    { session: '第2回', nps_score: round2(12.0 + npsOffset) },
+    { session: '第3回', nps_score: round2(18.0 + npsOffset) },
+    { session: '第4回', nps_score: round2(20.0 + npsOffset) },
+    { session: '第5回', nps_score: round2(25.0 + npsOffset) },
+  ];
+
+  const categoryLabels: Record<string, string> = {
+    overall_satisfaction: '総合満足度',
+    learning_amount: '学習量',
+    comprehension: '理解度',
+    operations: '運営',
+    instructor_satisfaction: '講師満足度',
+    time_management: '時間の使い方',
+    question_handling: '質問対応',
+    speaking_style: '話し方',
+    preparation: '予習',
+    motivation: '意欲',
+    future_application: '今後への活用',
+  };
 
   return {
     current: {
       academic_year: 2024,
       term: '10月～12月',
-      total_responses: Math.max(10, 231 + offset.responses),
+      total_responses: currentResponses,
       session_count: 6,
       average_nps: currentNps,
       average_scores: currentScores,
@@ -520,44 +871,19 @@ export function getDummyYearComparison(
     comparison: {
       academic_year: 2023,
       term: '10月～12月',
-      total_responses: Math.max(8, 198 + offset.responses),
+      total_responses: comparisonResponses,
       session_count: 5,
       average_nps: comparisonNps,
       average_scores: comparisonScores,
     },
     nps_trends: {
-      current: [
-        { session: '第1回', nps_score: round2(20.0 + npsOffset) },
-        { session: '第2回', nps_score: round2(22.5 + npsOffset) },
-        { session: '第3回', nps_score: round2(30.0 + npsOffset) },
-        { session: '第4回', nps_score: round2(25.0 + npsOffset) },
-        { session: '第5回', nps_score: round2(35.0 + npsOffset) },
-      ],
-      comparison: [
-        { session: '第1回', nps_score: round2(15.0 + npsOffset) },
-        { session: '第2回', nps_score: round2(12.0 + npsOffset) },
-        { session: '第3回', nps_score: round2(18.0 + npsOffset) },
-        { session: '第4回', nps_score: round2(20.0 + npsOffset) },
-        { session: '第5回', nps_score: round2(25.0 + npsOffset) },
-      ],
+      current: currentNpsTrends,
+      comparison: comparisonNpsTrends,
     },
     score_comparison: Object.keys(currentScores).map(key => {
       const k = key as keyof typeof currentScores;
-      const labels: Record<string, string> = {
-        overall_satisfaction: '総合満足度',
-        learning_amount: '学習量',
-        comprehension: '理解度',
-        operations: '運営',
-        instructor_satisfaction: '講師満足度',
-        time_management: '時間の使い方',
-        question_handling: '質問対応',
-        speaking_style: '話し方',
-        preparation: '予習',
-        motivation: '意欲',
-        future_application: '今後への活用',
-      };
       return {
-        category: labels[k] || k,
+        category: categoryLabels[k] || k,
         category_key: k,
         current_score: currentScores[k],
         comparison_score: comparisonScores[k],
